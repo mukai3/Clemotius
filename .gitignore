@@ -2,3 +2,15 @@ bin/
 obj/
 *.user
 .vs/
+.claude/
+
+# オリジナル「かざぐるマウス」のバイナリ（再配布条件への配慮のため追跡しない）
+Kazaguru.exe
+Kazaguru.chm
+Kazasub.dll
+Kazawow64.exe
+hook/
+ReadMe.txt
+
+# 個人設定ファイル（解析の参考資料）
+Kazaguru.ini

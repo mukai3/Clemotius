@@ -1,3 +1,7 @@
+using Clemoutis.Actions;
+using Clemoutis.Core.Actions;
+using Clemoutis.Core.Gestures;
+using Clemoutis.Gestures;
 using Clemoutis.Hooks;
 using Clemoutis.Tray;
 
@@ -42,7 +46,8 @@ internal sealed class AppContext : ApplicationContext
     {
         _instance = instance;
 
-        var router = new InputRouter(_modifiers);
+        var gesture = BuildGestureEngine();
+        var router = new InputRouter(_modifiers, gesture);
         _mouseHook.Handler = router.OnMouse;
         _keyboardHook.Handler = router.OnKeyboard;
         _mouseHook.Install();
@@ -65,6 +70,30 @@ internal sealed class AppContext : ApplicationContext
                 OnOpenSettings();
         };
         _instancePollTimer.Start();
+    }
+
+    /// <summary>
+    /// フェーズ2のハードコード設定。ユーザーの Kazaguru.ini からデコードした割り当てを
+    /// 初期値とする（フェーズ3で ConfigStore 駆動に置き換え）。
+    /// </summary>
+    private static GestureEngine BuildGestureEngine()
+    {
+        var bindings = new[]
+        {
+            new GestureBinding("L", new AppCommandAction(AppCommand.BrowserBackward)),
+            new GestureBinding("R", new AppCommandAction(AppCommand.BrowserForward)),
+            new GestureBinding("DR", new KeyAction(KeyStrokeParser.Parse("Ctrl+W"))),
+            new GestureBinding("UDU", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"))),
+            new GestureBinding("DUD", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"))),
+            new GestureBinding("LU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))),
+            new GestureBinding("RU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))),
+            new GestureBinding("LD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
+            new GestureBinding("RD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
+        };
+        return new GestureEngine(
+            new StrokeEncoder(range: 8),
+            new GestureMatcher(bindings),
+            new ActionExecutor());
     }
 
     private void OnOpenSettings()

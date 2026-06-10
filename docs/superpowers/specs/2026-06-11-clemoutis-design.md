@@ -1,4 +1,6 @@
-# KazaguruSharp 設計書
+# Clemoutis [KazaguruMouse Alternative] 設計書
+
+> アプリケーション名 **Clemoutis** は、かざぐるまをモチーフとするオリジナルに対し、クレマチス（植物カザグルマの原種）をもじった命名。
 
 作成日: 2026-06-11
 ステータス: ユーザー承認済み（バイナリ移植ベース・入力捕捉は案 A）
@@ -113,7 +115,7 @@
 
 ```
 ┌─────────────────────────────────────────────┐
-│ KazaguruSharp.exe (.NET 8, WinForms)        │
+│ Clemoutis.exe (.NET 8, WinForms)            │
 │                                             │
 │  ┌──────────────┐    ┌───────────────────┐  │
 │  │ MouseHook    │───▶│ InputRouter       │  │
@@ -149,7 +151,7 @@
 | ActionExecutor | アクション定義を解釈し、機構別に実行する。(1) キーストローク: 文字列（`"Ctrl+W"` 等）をパースし、対象ウィンドウへ `AttachThreadInput`+`SetForegroundWindow` で焦点を移したうえ `SendInput` 送信。(2) `WM_APPCOMMAND`: `APPCOMMAND_BROWSER_BACKWARD/FORWARD/REFRESH` 等を `SendMessageW`/`SendNotifyMessageW` で対象へ送信。(3) `WM_CLOSE`: `PostMessageW` で送信。アクション種別はピュアロジックで判定し、Win32 呼び出しは薄いラッパに隔離 |
 | TargetWindowResolver | アクション対象ウィンドウを決定（ジェスチャー開始位置のトップレベル窓 / 前面窓）。`WindowFromPoint`/`GetAncestor`/`GetForegroundWindow` を使用 |
 | ProfileResolver | 前面アプリのプロセス名から適用プロファイルを決定 |
-| ConfigStore | `%APPDATA%\KazaguruSharp\config.json` の読み書き。変更の即時反映（FileSystemWatcher） |
+| ConfigStore | `%APPDATA%\Clemoutis\config.json` の読み書き。変更の即時反映（FileSystemWatcher） |
 | TrayIcon / SettingsForm | トレイメニューと WinForms 設定画面 |
 
 ### 設計上の要点
@@ -180,7 +182,7 @@
 
 ## 設定ファイル
 
-`%APPDATA%\KazaguruSharp\config.json`。構造の骨子:
+`%APPDATA%\Clemoutis\config.json`。構造の骨子:
 
 ```json
 {

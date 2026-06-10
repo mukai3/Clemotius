@@ -1,6 +1,5 @@
 using Clemoutis.Actions;
-using Clemoutis.Core.Actions;
-using Clemoutis.Core.Gestures;
+using Clemoutis.Config;
 using Clemoutis.Gestures;
 using Clemoutis.Hooks;
 using Clemoutis.Tray;
@@ -40,13 +39,23 @@ internal sealed class AppContext : ApplicationContext
     private readonly KeyboardHook _keyboardHook = new();
     private readonly HookWatchdog _watchdog;
     private readonly TrayIcon _tray;
+    private readonly ConfigStore _configStore;
+    private readonly ActiveConfigProvider _configProvider;
     private readonly System.Windows.Forms.Timer _instancePollTimer;
+    // FileSystemWatcher のイベントを UI スレッドへ載せるための隠しコントロール
+    private readonly Control _marshal = new();
 
     public AppContext(SingleInstance instance)
     {
         _instance = instance;
 
-        var gesture = BuildGestureEngine();
+        _ = _marshal.Handle; // ハンドルを生成して BeginInvoke 可能にする
+        _configStore = new ConfigStore(_marshal);
+        _configProvider = new ActiveConfigProvider(_configStore.Current);
+        _configStore.Changed += cfg => _configProvider.Update(cfg);
+        _configStore.Corrupted += OnConfigCorrupted;
+
+        var gesture = new GestureEngine(_configProvider, new ActionExecutor());
         var router = new InputRouter(_modifiers, gesture);
         _mouseHook.Handler = router.OnMouse;
         _keyboardHook.Handler = router.OnKeyboard;
@@ -72,28 +81,9 @@ internal sealed class AppContext : ApplicationContext
         _instancePollTimer.Start();
     }
 
-    /// <summary>
-    /// フェーズ2のハードコード設定。ユーザーの Kazaguru.ini からデコードした割り当てを
-    /// 初期値とする（フェーズ3で ConfigStore 駆動に置き換え）。
-    /// </summary>
-    private static GestureEngine BuildGestureEngine()
+    private void OnConfigCorrupted(string backupPath)
     {
-        var bindings = new[]
-        {
-            new GestureBinding("L", new AppCommandAction(AppCommand.BrowserBackward)),
-            new GestureBinding("R", new AppCommandAction(AppCommand.BrowserForward)),
-            new GestureBinding("DR", new KeyAction(KeyStrokeParser.Parse("Ctrl+W"))),
-            new GestureBinding("UDU", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"))),
-            new GestureBinding("DUD", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"))),
-            new GestureBinding("LU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))),
-            new GestureBinding("RU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))),
-            new GestureBinding("LD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
-            new GestureBinding("RD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
-        };
-        return new GestureEngine(
-            new StrokeEncoder(range: 8),
-            new GestureMatcher(bindings),
-            new ActionExecutor());
+        _tray.ShowInfo($"設定ファイルが壊れていたため既定設定で起動しました。\n退避先: {backupPath}");
     }
 
     private void OnOpenSettings()
@@ -132,6 +122,8 @@ internal sealed class AppContext : ApplicationContext
             _tray.Dispose();
             _mouseHook.Dispose();
             _keyboardHook.Dispose();
+            _configStore.Dispose();
+            _marshal.Dispose();
         }
         base.Dispose(disposing);
     }

@@ -1,0 +1,51 @@
+namespace Clemoutis.Core.Config;
+
+/// <summary>
+/// 前面アプリのプロセス名から適用プロファイルを決定する。Win32 非依存。
+/// マッチ規則: ProcessPattern がワイルドカード "*" 以外で、プロセス名に
+/// （拡張子 .exe を無視して）一致するものを優先。複数該当時は定義順で先勝ち。
+/// 該当が無ければ "*"（既定）プロファイル。それも無ければ null。
+/// </summary>
+public sealed class ProfileResolver
+{
+    private readonly IReadOnlyList<GestureProfile> _profiles;
+
+    public ProfileResolver(IReadOnlyList<GestureProfile> profiles)
+    {
+        _profiles = profiles;
+    }
+
+    public GestureProfile? Resolve(string? processName)
+    {
+        string name = NormalizeProcess(processName);
+
+        GestureProfile? wildcard = null;
+        foreach (var p in _profiles)
+        {
+            if (p.ProcessPattern == "*")
+            {
+                wildcard ??= p; // 最初の "*" を既定として温存
+                continue;
+            }
+            if (Matches(p.ProcessPattern, name))
+                return p; // 具体的なパターンを優先
+        }
+        return wildcard;
+    }
+
+    private static bool Matches(string pattern, string processName)
+    {
+        string pat = NormalizeProcess(pattern);
+        return string.Equals(pat, processName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeProcess(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "";
+        string s = value.Trim();
+        if (s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            s = s[..^4];
+        return s;
+    }
+}

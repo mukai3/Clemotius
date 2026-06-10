@@ -184,11 +184,34 @@
 
 ```json
 {
+  "gesture": {
+    "range": 8,
+    "timeoutMs": 1000,
+    "pushHoldTimeMs": 500,
+    "rapidFire": false,
+    "drawStroke": false,
+    "drawingType": 0,
+    "strokeWidth": 2,
+    "validStrokeColor": "#80FF00",
+    "invalidStrokeColor": "#FFFF00"
+  },
   "scroll": {
+    "sensitivity": 3,
+    "acceleration": 3,
+    "acceleratedScroll": false,
+    "scrollAlways": false,
     "horizontalOnScrollbar": true,
+    "mergeWheelDelta": 2,
+    "wheelResolution": 1,
+    "autoWheelResolution": 3,
     "modifierRules": [
-      { "modifier": "Shift", "behavior": "horizontal" }
+      { "modifier": "Alt", "behavior": "code:55" }
     ]
+  },
+  "tray": {
+    "showTrayIcon": true,
+    "showBalloonTip": false,
+    "menuStyle": 2
   },
   "profiles": [
     {
@@ -207,7 +230,34 @@
 }
 ```
 
-GUI で編集・保存時に即リロード。手動編集も FileSystemWatcher で反映。
+`gesture` / `scroll` / `tray` の既定値は**ユーザーの実 `Kazaguru.ini` から採取した値**（使用感の踏襲）。全項目は GUI/JSON で変更可能。GUI で編集・保存時に即リロード。手動編集も FileSystemWatcher で反映。
+
+### 既定値の出所（ユーザー ini 由来）
+
+| 新 config | 既定値 | 由来 ini キー | 意味・状態 |
+|---|---|---|---|
+| `gesture.range` | 8 | `GestureRange` | ストローク認識距離（方向確定の最小移動量） |
+| `gesture.timeoutMs` | 1000 | `GestureTimeout` | ジェスチャー入力のタイムアウト |
+| `gesture.pushHoldTimeMs` | 500 | `PushHoldTime` | 右ボタン長押し判定時間 |
+| `gesture.rapidFire` | false | `EnableGesRapidFire`=0 | 連射無効 |
+| `gesture.drawStroke` | **false** | `DrawGesStroke`=0 | **軌跡描画はオフ**（ユーザー現状に合わせる） |
+| `gesture.drawingType` | 0 | `GesDrawingType` | 描画方式（描画有効時）。enum 詳細は動的解析で確定 |
+| `gesture.strokeWidth` | 2 | `GesStrokeWidth` | 線幅 px（描画有効時） |
+| `gesture.validStrokeColor` | `#80FF00` | `ValidGesStrokeColor`=65408 | 有効ストローク色（COLORREF→RGB 変換） |
+| `gesture.invalidStrokeColor` | `#FFFF00` | `InvalidGesStrokeColor`=65535 | 無効ストローク色 |
+| `scroll.sensitivity` | 3 | `Sensitivity` | スクロール感度 |
+| `scroll.acceleration` | 3 | `Acceleration` | スクロール加速度 |
+| `scroll.acceleratedScroll` | false | `AcceleratedScroll`=0 | スクロール加速の有効/無効 |
+| `scroll.scrollAlways` | false | `ScrollAlways`=0 | 常時カーソル下スクロール（v1未実装機能・値のみ保持） |
+| `scroll.mergeWheelDelta` | 2 | `MergeWheelDelta` | ホイールデルタ統合 |
+| `scroll.wheelResolution` | 1 | `WheelResolution` | ホイール解像度 |
+| `scroll.autoWheelResolution` | 3 | `AutoWheelResolution` | 自動ホイール解像度 |
+| `scroll.modifierRules` | Alt=`code:55` | `ScrollExAlt`=55（他修飾キーは0=無効） | 修飾キー別の拡張スクロール動作。Alt のみ有効。`53/55/58` 等のコードの意味は動的解析で確定 |
+| `tray.showTrayIcon` | true | `ShowTrayIcon` | トレイアイコン表示 |
+| `tray.showBalloonTip` | false | `ShowBalloonTip`=0 | バルーン通知 |
+| `tray.menuStyle` | 2 | `TrayIconMenuStyle` | トレイメニュー様式 |
+
+> 不透明な enum/bitflag 値（`GestureFlags=262`, `ScrollExFlags=18`, `ScrollEx*` の `53/55/58`, `GesDrawingType`）は、意味が未確定でも**生の値を既定として保持**し、使用感を保つ。各コードの意味は実装フェーズの動的解析でデコードして名前付き設定に昇格する。スコープ外機能（音量・タスクバー・オートスクロール等）の ini 値は取り込まない。
 
 ## エラー処理
 

@@ -82,14 +82,15 @@ public class ScrollBehaviorParserTests
     }
 
     [Theory]
-    // 動的解析で確定したコードの方向ビット（bit3=0x08: 1=水平/0=垂直）
-    [InlineData("code:58", WheelConversion.Horizontal)] // 水平既定/Shift
+    // 動的解析で確定: 垂直系=50..57 / 水平系=56..63（56以上を水平系と近似）
+    [InlineData("code:58", WheelConversion.Horizontal)] // 水平6列
     [InlineData("code:57", WheelConversion.Horizontal)] // 水平3列
-    [InlineData("code:53", WheelConversion.None)]       // 垂直既定/Ctrl
+    [InlineData("code:56", WheelConversion.Horizontal)] // 水平1列
+    [InlineData("code:55", WheelConversion.None)]       // 垂直ページ
+    [InlineData("code:53", WheelConversion.None)]       // 垂直9行（既定）
     [InlineData("code:50", WheelConversion.None)]       // 垂直1行
-    [InlineData("code:55", WheelConversion.None)]       // 垂直（bit3立たず）
     [InlineData("code:abc", WheelConversion.None)]      // 不正コードは素通し
-    public void Parse_DecodesOriginalCodeDirectionBit(string behavior, WheelConversion expected)
+    public void Parse_DecodesOriginalCodeByRange(string behavior, WheelConversion expected)
     {
         Assert.Equal(expected, ScrollBehaviorParser.Parse(behavior));
     }

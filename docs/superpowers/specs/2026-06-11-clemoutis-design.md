@@ -202,8 +202,8 @@
     "acceleration": 3,
     "acceleratedScroll": false,
     "scrollAlways": false,
-    "onVerticalScrollbar": "code:53",
-    "onHorizontalScrollbar": "code:58",
+    "onVerticalScrollbar": "none",
+    "onHorizontalScrollbar": "horizontal",
     "mergeWheelDelta": 2,
     "wheelResolution": 1,
     "autoWheelResolution": 3,
@@ -257,8 +257,8 @@
 | `scroll.acceleration` | 3 | `Acceleration` | スクロール加速度 |
 | `scroll.acceleratedScroll` | false | `AcceleratedScroll`=0 | スクロール加速の有効/無効 |
 | `scroll.scrollAlways` | false | `ScrollAlways`=0 | 常時カーソル下スクロール（v1未実装機能・値のみ保持） |
-| `scroll.onVerticalScrollbar` | `code:53` | `ScrollExOnVScrlBar`=53 | 垂直スクロールバー上でホイール回転時の挙動。オリジナル「ホイール」タブのドロップダウン。意味未確定（D.4） |
-| `scroll.onHorizontalScrollbar` | `code:58` | `ScrollExOnHScrlBar`=58 | 水平スクロールバー上でホイール回転時の挙動。同上。`horizontal` を選べば縦ホイール→水平スクロール |
+| `scroll.onVerticalScrollbar` | `none` | `ScrollExOnVScrlBar`=53(9行) | 垂直スクロールバー上の挙動。コード解読済み（垂直系=50..57 連番）。9行=垂直スクロール＝Clemoutis では通常動作扱いで `none` |
+| `scroll.onHorizontalScrollbar` | `horizontal` | `ScrollExOnHScrlBar`=58(水平6列) | 水平スクロールバー上の挙動。コード解読済み（水平系=56..63 連番）。水平6列=水平スクロール＝`horizontal` |
 | `scroll.mergeWheelDelta` | 2 | `MergeWheelDelta` | ホイールデルタ統合 |
 | `scroll.wheelResolution` | 1 | `WheelResolution` | ホイール解像度 |
 | `scroll.autoWheelResolution` | 3 | `AutoWheelResolution` | 自動ホイール解像度 |

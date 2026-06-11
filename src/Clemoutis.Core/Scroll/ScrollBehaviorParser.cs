@@ -7,11 +7,13 @@ namespace Clemoutis.Core.Scroll;
 /// </summary>
 public static class ScrollBehaviorParser
 {
-    // オリジナルのスクロール動作コードの方向ビット。
-    // 動的解析（appdefault→modscroll の差分）で確定: 57(水平3列)/58(水平既定)は水平、
-    // 50(垂直1行)/53(垂直既定)は垂直。全サンプルで bit3(0x08)=方向(1=水平/0=垂直) が整合。
-    // 量・単位（行/列/ページ数）の完全な意味は未確定だが、方向だけは判別できる。
-    private const int HorizontalDirectionBit = 0x08;
+    // オリジナルのスクロール動作コードは選択肢の連番（動的解析で完全確定）:
+    //   垂直系: 1行=50 3行=51 6行=52 9行=53 12行=54 ページ=55 高速=56 上端下端=57
+    //   水平系: 1列=56 3列=57 6列=58 9列=59 12列=60 ページ=61 高速=62 左右端=63
+    // 56/57 は垂直(高速/上端下端)と水平(1列/3列)で重複し、本来の方向は「どちらのスロット
+    // (垂直バー用/水平バー用)か」で決まる。コード単体から推定する場合は値域で近似する
+    // （56 以上＝水平系）。垂直の高速/上端下端(56/57)を割り当てる稀なケースのみ水平に倒れる。
+    private const int HorizontalCodeThreshold = 56;
 
     public static WheelConversion Parse(string? behavior)
     {
@@ -27,12 +29,12 @@ public static class ScrollBehaviorParser
                 return WheelConversion.None;
         }
 
-        // "code:NN"（オリジナルのコード値）は方向ビットで水平/垂直を判定する。
-        // 垂直は通常スクロールと同義なので素通し（None）扱い。
+        // "code:NN"（オリジナルのコード値）は値域で水平/垂直を近似する。
+        // 垂直系は通常スクロールと同義なので素通し（None）扱い。
         if (s.StartsWith("code:", StringComparison.Ordinal)
             && int.TryParse(s.AsSpan("code:".Length), out int code))
         {
-            return (code & HorizontalDirectionBit) != 0
+            return code >= HorizontalCodeThreshold
                 ? WheelConversion.Horizontal
                 : WheelConversion.None;
         }

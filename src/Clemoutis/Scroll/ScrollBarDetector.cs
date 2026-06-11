@@ -23,18 +23,23 @@ internal static class ScrollBarDetector
     private const int GWL_STYLE = -16;
     private const int SBS_VERT = 0x0001; // 立っていれば垂直（単独スクロールバー）
 
-    public static ScrollBarHit Detect(int x, int y)
+    /// <summary>
+    /// カーソル直下のスクロールバーの向きと、スクロールメッセージの送出先ウィンドウを返す。
+    /// 検出できなければ (None, 0)。
+    /// </summary>
+    public static (ScrollBarHit hit, nint target) Detect(int x, int y)
     {
         var pt = new NativeMethods.POINT { X = x, Y = y };
         nint hwnd = InputNative.WindowFromPoint(pt);
         if (hwnd == 0)
-            return ScrollBarHit.None;
+            return (ScrollBarHit.None, 0);
 
-        // 1) 単独スクロールバー コントロール
+        // 1) 単独スクロールバー コントロール → 親ウィンドウへ送る
         if (GetClassName(hwnd).Equals("ScrollBar", StringComparison.OrdinalIgnoreCase))
         {
             int style = InputNative.GetWindowLongW(hwnd, GWL_STYLE);
-            return (style & SBS_VERT) != 0 ? ScrollBarHit.Vertical : ScrollBarHit.Horizontal;
+            var dir = (style & SBS_VERT) != 0 ? ScrollBarHit.Vertical : ScrollBarHit.Horizontal;
+            return (dir, hwnd);
         }
 
         // 2) 非クライアントの標準スクロールバー: ウィンドウにヒットテストを問い合わせる
@@ -42,9 +47,9 @@ internal static class ScrollBarDetector
         nint hit = InputNative.SendMessageW(hwnd, InputNative.WM_NCHITTEST, 0, lParam);
         return (int)hit switch
         {
-            InputNative.HTHSCROLL => ScrollBarHit.Horizontal,
-            InputNative.HTVSCROLL => ScrollBarHit.Vertical,
-            _ => ScrollBarHit.None,
+            InputNative.HTHSCROLL => (ScrollBarHit.Horizontal, hwnd),
+            InputNative.HTVSCROLL => (ScrollBarHit.Vertical, hwnd),
+            _ => (ScrollBarHit.None, 0),
         };
     }
 

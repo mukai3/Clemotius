@@ -12,86 +12,106 @@ public class ModifierScrollResolverTests
     private static ModifierScrollResolver Resolver(ModifierScrollSettings s) => new(s);
 
     [Fact]
-    public void EachSingleAndPairSlot_MatchesExactCombination()
+    public void EachSlot_MatchesExactCombination()
     {
         var s = new ModifierScrollSettings
         {
-            Shift = "horizontal",
+            Shift = "code:58",
             Ctrl = "none",
-            CtrlShift = "horizontal",
-            Alt = "none",
-            ShiftAlt = "horizontal",
+            CtrlShift = "code:57",
+            Alt = "code:55",
+            ShiftAlt = "code:50",
             CtrlAlt = "none",
         };
         var r = Resolver(s);
-        Assert.Equal(WheelConversion.Horizontal, r.Resolve(new Mods(Shift: true)));
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true)));
-        Assert.Equal(WheelConversion.Horizontal, r.Resolve(new Mods(Ctrl: true, Shift: true)));
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Alt: true)));
-        Assert.Equal(WheelConversion.Horizontal, r.Resolve(new Mods(Shift: true, Alt: true)));
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true, Alt: true)));
+        Assert.Equal("code:58", r.ResolveBehavior(new Mods(Shift: true)));
+        Assert.Equal("none", r.ResolveBehavior(new Mods(Ctrl: true)));
+        Assert.Equal("code:57", r.ResolveBehavior(new Mods(Ctrl: true, Shift: true)));
+        Assert.Equal("code:55", r.ResolveBehavior(new Mods(Alt: true)));
+        Assert.Equal("code:50", r.ResolveBehavior(new Mods(Shift: true, Alt: true)));
+        Assert.Equal("none", r.ResolveBehavior(new Mods(Ctrl: true, Alt: true)));
     }
 
     [Fact]
     public void CtrlShift_IsDistinctFromSingleCtrl()
     {
-        var s = new ModifierScrollSettings { Ctrl = "horizontal", CtrlShift = "none" };
-        Assert.Equal(WheelConversion.None, Resolver(s).Resolve(new Mods(Ctrl: true, Shift: true)));
+        var s = new ModifierScrollSettings { Ctrl = "code:58", CtrlShift = "none" };
+        Assert.Equal("none", Resolver(s).ResolveBehavior(new Mods(Ctrl: true, Shift: true)));
     }
 
     [Fact]
-    public void NoModifier_ReturnsNone()
+    public void NoModifier_ReturnsNull()
     {
-        var s = new ModifierScrollSettings { Ctrl = "horizontal" };
-        Assert.Equal(WheelConversion.None, Resolver(s).Resolve(new Mods()));
+        var s = new ModifierScrollSettings { Ctrl = "code:58" };
+        Assert.Null(Resolver(s).ResolveBehavior(new Mods()));
     }
 
     [Fact]
-    public void UnsupportedCombination_CtrlShiftAlt_ReturnsNone()
+    public void UnsupportedCombination_CtrlShiftAlt_ReturnsNull()
     {
-        var s = new ModifierScrollSettings
-        {
-            Ctrl = "horizontal", CtrlShift = "horizontal", CtrlAlt = "horizontal",
-        };
-        Assert.Equal(WheelConversion.None,
-            Resolver(s).Resolve(new Mods(Ctrl: true, Shift: true, Alt: true)));
-    }
-
-    [Fact]
-    public void DefaultSettings_AltIsUnknownCode_ResolvesNoneUntilDecoded()
-    {
-        // 既定の Alt="code:55" は意味未確定のため素通し（None）
-        var r = new ModifierScrollResolver(new ModifierScrollSettings());
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Alt: true)));
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true)));
+        var s = new ModifierScrollSettings { Ctrl = "code:58", CtrlShift = "code:57" };
+        Assert.Null(Resolver(s).ResolveBehavior(new Mods(Ctrl: true, Shift: true, Alt: true)));
     }
 }
 
-public class ScrollBehaviorParserTests
+public class ScrollCodeDecoderTests
 {
     [Theory]
-    [InlineData("horizontal", WheelConversion.Horizontal)]
-    [InlineData("Horizontal", WheelConversion.Horizontal)]
-    [InlineData("none", WheelConversion.None)]
-    [InlineData("passthrough", WheelConversion.None)]
-    [InlineData("", WheelConversion.None)]
-    [InlineData(null, WheelConversion.None)]
-    public void Parse_MapsBehaviors(string? behavior, WheelConversion expected)
+    [InlineData("none")]
+    [InlineData("passthrough")]
+    [InlineData("")]
+    [InlineData(null)]
+    [InlineData("code:abc")]
+    public void Decode_NoneOrInvalid_ReturnsNull(string? behavior)
     {
-        Assert.Equal(expected, ScrollBehaviorParser.Parse(behavior));
+        Assert.Null(ScrollCodeDecoder.Decode(behavior, null));
     }
 
     [Theory]
-    // 動的解析で確定: 垂直系=50..57 / 水平系=56..63（56以上を水平系と近似）
-    [InlineData("code:58", WheelConversion.Horizontal)] // 水平6列
-    [InlineData("code:57", WheelConversion.Horizontal)] // 水平3列
-    [InlineData("code:56", WheelConversion.Horizontal)] // 水平1列
-    [InlineData("code:55", WheelConversion.None)]       // 垂直ページ
-    [InlineData("code:53", WheelConversion.None)]       // 垂直9行（既定）
-    [InlineData("code:50", WheelConversion.None)]       // 垂直1行
-    [InlineData("code:abc", WheelConversion.None)]      // 不正コードは素通し
-    public void Parse_DecodesOriginalCodeByRange(string behavior, WheelConversion expected)
+    // 垂直スロット: 50=1行 .. 54=12行 / 55=ページ / 57=端
+    [InlineData("code:50", ScrollOrientation.Vertical, ScrollUnit.Line, 1)]
+    [InlineData("code:51", ScrollOrientation.Vertical, ScrollUnit.Line, 3)]
+    [InlineData("code:52", ScrollOrientation.Vertical, ScrollUnit.Line, 6)]
+    [InlineData("code:53", ScrollOrientation.Vertical, ScrollUnit.Line, 9)]
+    [InlineData("code:54", ScrollOrientation.Vertical, ScrollUnit.Line, 12)]
+    [InlineData("code:55", ScrollOrientation.Vertical, ScrollUnit.Page, 1)]
+    [InlineData("code:57", ScrollOrientation.Vertical, ScrollUnit.Edge, 1)]
+    public void Decode_VerticalSlot(string behavior, ScrollOrientation o, ScrollUnit u, int amount)
     {
-        Assert.Equal(expected, ScrollBehaviorParser.Parse(behavior));
+        var a = ScrollCodeDecoder.Decode(behavior, ScrollOrientation.Vertical)!;
+        Assert.Equal(o, a.Orientation);
+        Assert.Equal(u, a.Unit);
+        Assert.Equal(amount, a.Amount);
+    }
+
+    [Theory]
+    // 水平スロット: 56=1列 / 57=3列 / 58=6列 / 61=ページ / 63=端
+    [InlineData("code:56", ScrollUnit.Line, 1)]
+    [InlineData("code:57", ScrollUnit.Line, 3)]
+    [InlineData("code:58", ScrollUnit.Line, 6)]
+    [InlineData("code:61", ScrollUnit.Page, 1)]
+    [InlineData("code:63", ScrollUnit.Edge, 1)]
+    public void Decode_HorizontalSlot(string behavior, ScrollUnit u, int amount)
+    {
+        var a = ScrollCodeDecoder.Decode(behavior, ScrollOrientation.Horizontal)!;
+        Assert.Equal(ScrollOrientation.Horizontal, a.Orientation);
+        Assert.Equal(u, a.Unit);
+        Assert.Equal(amount, a.Amount);
+    }
+
+    [Fact]
+    public void Decode_UnknownSlot_UsesValueRange()
+    {
+        // スロット不明(修飾キー)では 56 以上を水平、未満を垂直と近似
+        Assert.Equal(ScrollOrientation.Horizontal, ScrollCodeDecoder.Decode("code:58", null)!.Orientation);
+        Assert.Equal(ScrollOrientation.Vertical, ScrollCodeDecoder.Decode("code:53", null)!.Orientation);
+    }
+
+    [Fact]
+    public void Decode_HorizontalKeyword_IsHorizontalLine()
+    {
+        var a = ScrollCodeDecoder.Decode("horizontal", null)!;
+        Assert.Equal(ScrollOrientation.Horizontal, a.Orientation);
+        Assert.Equal(ScrollUnit.Line, a.Unit);
     }
 }

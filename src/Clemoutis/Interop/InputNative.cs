@@ -25,6 +25,17 @@ internal static class InputNative
     public const int HTHSCROLL = 6;
     public const int HTVSCROLL = 7;
 
+    public const uint WM_HSCROLL = 0x0114;
+    public const uint WM_VSCROLL = 0x0115;
+    // スクロールバー通知コード（水平/垂直で同値）
+    public const int SB_LINEBACK = 0;   // 上/左へ1行(列)
+    public const int SB_LINEFWD = 1;    // 下/右へ1行(列)
+    public const int SB_PAGEBACK = 2;
+    public const int SB_PAGEFWD = 3;
+    public const int SB_HOME = 6;       // 先頭(上端/左端)
+    public const int SB_END = 7;        // 末尾(下端/右端)
+    public const int SB_ENDSCROLL = 8;
+
     public const uint GA_ROOT = 2;
 
     [StructLayout(LayoutKind.Sequential)]

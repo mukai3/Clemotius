@@ -25,6 +25,18 @@
 - アプリ種別カテゴリ: IE系/Mozilla系/Opera/Safari系/Chromium系/エクスプローラ/ウィンドウ（Chromiumは独立カテゴリ）
 - コマンドカタログの一端（メニューリソースより）: コピー/取得系（選択テキスト・ブラウザURL/タイトル・リンク先URL/テキスト・エクスプローラのフォルダ/選択ファイル・ウィンドウの実行ファイル/タイトル 等）
 
+## スクロールバー操作の実装方式（バイナリ解析で確定）
+
+`Kazahook.dll`/`Kazasub.dll` のインポートに **`GetScrollInfo` / `SetScrollInfo`**（Kazasub は
+`SetScrollPos`/`GetScrollPos`/`ShowScrollBar` も）＋ `SendMessageW`/`PostMessageW`＋`WindowFromPoint`/
+`RealChildWindowFromPoint`＋MSAA(`AccessibleObjectFromWindow`) があることから、オリジナルは
+**スクロールバーを直接操作**している（`MOUSEEVENTF_HWHEEL` ではない）。
+
+→ Clemoutis も `MOUSEEVENTF_HWHEEL` 送出をやめ、対象ウィンドウへ **`WM_HSCROLL`/`WM_VSCROLL`**
+（`SB_LINELEFT/RIGHT` を量ぶん、ページは `SB_PAGE*`、端は `SB_LEFT/RIGHT`）を送る方式に変更。
+これで標準スクロールバーで確実に動き、解読済みコード値の「N行/N列」量制御も実現。
+高速スクロール(コード末尾6)は暫定で多めの行数、量未確定。
+
 ## 動的解析で確定（2026-06-11、ユーザー提供 ini の差分より）
 
 ユーザーが appdefault / mydefault / modscroll の3 ini を提供。modscroll は appdefault から

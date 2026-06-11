@@ -15,6 +15,7 @@ internal sealed class SettingsForm : Form
 
     // --- マウスジェスチャー タブ ---
     private readonly ComboBox _profileCombo = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly TextBox _profileName = new();
     private readonly TextBox _profilePattern = new();
     private readonly CheckBox _gesturesEnabled = new() { Text = "このプロファイルでジェスチャーを有効にする" };
     private readonly ListView _gestureList = new();
@@ -90,13 +91,17 @@ internal sealed class SettingsForm : Form
         addProfile.Click += (_, _) => AddProfile();
         removeProfile.Click += (_, _) => RemoveProfile();
 
-        var patternLabel = new Label { Text = "対象プロセス名（* で全て）", Left = 12, Top = 46, Width = 170 };
-        _profilePattern.SetBounds(186, 43, 200, 23);
+        var nameLabel = new Label { Text = "プロファイル名", Left = 12, Top = 49, Width = 90 };
+        _profileName.SetBounds(106, 46, 200, 23);
+        _profileName.Leave += (_, _) => SaveProfileHeader();
+
+        var patternLabel = new Label { Text = "対象プロセス名（* で全て）", Left = 12, Top = 79, Width = 170 };
+        _profilePattern.SetBounds(186, 76, 200, 23);
         _profilePattern.Leave += (_, _) => SaveProfileHeader();
-        _gesturesEnabled.SetBounds(12, 72, 380, 23);
+        _gesturesEnabled.SetBounds(12, 106, 380, 23);
         _gesturesEnabled.CheckedChanged += (_, _) => SaveProfileHeader();
 
-        _gestureList.SetBounds(12, 102, 436, 180);
+        _gestureList.SetBounds(12, 134, 436, 150);
         _gestureList.View = View.Details;
         _gestureList.FullRowSelect = true;
         _gestureList.MultiSelect = false;
@@ -104,15 +109,15 @@ internal sealed class SettingsForm : Form
         _gestureList.Columns.Add("アクション", 310);
         _gestureList.DoubleClick += (_, _) => EditGesture();
 
-        var add = new Button { Text = "追加", Left = 12, Top = 288, Width = 80 };
-        var edit = new Button { Text = "編集", Left = 98, Top = 288, Width = 80 };
-        var remove = new Button { Text = "削除", Left = 184, Top = 288, Width = 80 };
+        var add = new Button { Text = "追加", Left = 12, Top = 290, Width = 80 };
+        var edit = new Button { Text = "編集", Left = 98, Top = 290, Width = 80 };
+        var remove = new Button { Text = "削除", Left = 184, Top = 290, Width = 80 };
         add.Click += (_, _) => AddGesture();
         edit.Click += (_, _) => EditGesture();
         remove.Click += (_, _) => RemoveGesture();
 
         var wheelGroup = new GroupBox { Text = "右ボタン + ホイール" };
-        wheelGroup.SetBounds(12, 320, 436, 90);
+        wheelGroup.SetBounds(12, 322, 436, 90);
         var wheelUpBtn = new Button { Text = "上を設定...", Left = 8, Top = 22, Width = 90 };
         var wheelDownBtn = new Button { Text = "下を設定...", Left = 8, Top = 54, Width = 90 };
         wheelUpBtn.Click += (_, _) => EditWheelAction(up: true);
@@ -125,7 +130,8 @@ internal sealed class SettingsForm : Form
 
         page.Controls.AddRange(new Control[]
         {
-            _profileCombo, addProfile, removeProfile, patternLabel, _profilePattern,
+            _profileCombo, addProfile, removeProfile, nameLabel, _profileName,
+            patternLabel, _profilePattern,
             _gesturesEnabled, _gestureList, add, edit, remove, wheelGroup,
         });
         return page;
@@ -349,6 +355,7 @@ internal sealed class SettingsForm : Form
     {
         if (Selected is not { } p)
             return;
+        _profileName.Text = p.Name;
         _profilePattern.Text = p.ProcessPattern;
         _gesturesEnabled.Checked = p.GesturesEnabled;
         RefreshGestureList();
@@ -359,6 +366,8 @@ internal sealed class SettingsForm : Form
     {
         if (Selected is not { } p)
             return;
+        if (!string.IsNullOrWhiteSpace(_profileName.Text))
+            p.Name = _profileName.Text.Trim();
         p.ProcessPattern = string.IsNullOrWhiteSpace(_profilePattern.Text) ? "*" : _profilePattern.Text.Trim();
         p.GesturesEnabled = _gesturesEnabled.Checked;
         // コンボの表示更新

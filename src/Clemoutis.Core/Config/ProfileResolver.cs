@@ -1,3 +1,5 @@
+using Clemoutis.Core.Gestures;
+
 namespace Clemoutis.Core.Config;
 
 /// <summary>
@@ -31,6 +33,41 @@ public sealed class ProfileResolver
                 return p; // 具体的なパターンを優先
         }
         return wildcard;
+    }
+
+    /// <summary>
+    /// グローバル("*")プロファイルをベースに、アプリ別プロファイルをマージした
+    /// 「実効プロファイル」を返す。アプリ別が同じストロークを定義していれば上書きし、
+    /// 右+ホイールはアプリ別が未設定ならグローバルを引き継ぐ。GesturesEnabled は
+    /// アプリ別が一致すればアプリ別を、無ければグローバルを採用する。
+    /// </summary>
+    public GestureProfile? ResolveEffective(string? processName)
+    {
+        string name = NormalizeProcess(processName);
+        GestureProfile? global = null;
+        GestureProfile? specific = null;
+        foreach (var p in _profiles)
+        {
+            if (p.ProcessPattern == "*")
+                global ??= p;
+            else if (specific is null && Matches(p.ProcessPattern, name))
+                specific = p;
+        }
+
+        if (specific is null) return global;
+        if (global is null) return specific;
+
+        // グローバルのジェスチャーをベースに、アプリ別で上書き・追加
+        var merged = new Dictionary<string, GestureBinding>(StringComparer.Ordinal);
+        foreach (var g in global.Gestures) merged[g.Strokes] = g;
+        foreach (var g in specific.Gestures) merged[g.Strokes] = g;
+
+        return specific with
+        {
+            Gestures = merged.Values.ToArray(),
+            WheelUp = specific.WheelUp ?? global.WheelUp,
+            WheelDown = specific.WheelDown ?? global.WheelDown,
+        };
     }
 
     private static bool Matches(string pattern, string processName)

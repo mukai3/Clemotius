@@ -51,7 +51,7 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
 
         lock (_gate)
         {
-            var profile = _resolver.Resolve(process);
+            var profile = _resolver.ResolveEffective(process);
             if (profile is null)
                 return null;
             if (!profile.GesturesEnabled)

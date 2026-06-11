@@ -9,59 +9,61 @@ public class ModifierScrollResolverTests
     private sealed record Mods(bool Shift = false, bool Ctrl = false, bool Alt = false, bool Win = false)
         : IModifierState;
 
-    private static ModifierScrollResolver Resolver(
-        string ctrl = "none", string shift = "none", string ctrlShift = "none") =>
-        new(new ModifierScrollSettings { Ctrl = ctrl, Shift = shift, CtrlShift = ctrlShift });
+    private static ModifierScrollResolver Resolver(ModifierScrollSettings s) => new(s);
 
     [Fact]
-    public void CtrlPressed_UsesCtrlBehavior()
+    public void EachSingleAndPairSlot_MatchesExactCombination()
     {
-        Assert.Equal(WheelConversion.Horizontal,
-            Resolver(ctrl: "horizontal").Resolve(new Mods(Ctrl: true)));
+        var s = new ModifierScrollSettings
+        {
+            Shift = "horizontal",
+            Ctrl = "none",
+            CtrlShift = "horizontal",
+            Alt = "none",
+            ShiftAlt = "horizontal",
+            CtrlAlt = "none",
+        };
+        var r = Resolver(s);
+        Assert.Equal(WheelConversion.Horizontal, r.Resolve(new Mods(Shift: true)));
+        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true)));
+        Assert.Equal(WheelConversion.Horizontal, r.Resolve(new Mods(Ctrl: true, Shift: true)));
+        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Alt: true)));
+        Assert.Equal(WheelConversion.Horizontal, r.Resolve(new Mods(Shift: true, Alt: true)));
+        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true, Alt: true)));
     }
 
     [Fact]
-    public void ShiftPressed_UsesShiftBehavior()
+    public void CtrlShift_IsDistinctFromSingleCtrl()
     {
-        Assert.Equal(WheelConversion.Horizontal,
-            Resolver(shift: "horizontal").Resolve(new Mods(Shift: true)));
-    }
-
-    [Fact]
-    public void CtrlShiftPressed_UsesCtrlShiftBehavior_NotCtrl()
-    {
-        // Ctrl+Shift は単独 Ctrl とは別スロット。Ctrl=horizontal でも CtrlShift が優先される。
-        var r = Resolver(ctrl: "horizontal", ctrlShift: "none");
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true, Shift: true)));
-    }
-
-    [Fact]
-    public void CtrlShiftPressed_ResolvesCtrlShiftHorizontal()
-    {
-        Assert.Equal(WheelConversion.Horizontal,
-            Resolver(ctrlShift: "horizontal").Resolve(new Mods(Ctrl: true, Shift: true)));
+        var s = new ModifierScrollSettings { Ctrl = "horizontal", CtrlShift = "none" };
+        Assert.Equal(WheelConversion.None, Resolver(s).Resolve(new Mods(Ctrl: true, Shift: true)));
     }
 
     [Fact]
     public void NoModifier_ReturnsNone()
     {
-        Assert.Equal(WheelConversion.None, Resolver(ctrl: "horizontal").Resolve(new Mods()));
+        var s = new ModifierScrollSettings { Ctrl = "horizontal" };
+        Assert.Equal(WheelConversion.None, Resolver(s).Resolve(new Mods()));
     }
 
     [Fact]
-    public void AltIsIgnored()
+    public void UnsupportedCombination_CtrlShiftAlt_ReturnsNone()
     {
-        // Alt はオリジナルに無いので対象外
-        Assert.Equal(WheelConversion.None, Resolver(ctrl: "horizontal").Resolve(new Mods(Alt: true)));
+        var s = new ModifierScrollSettings
+        {
+            Ctrl = "horizontal", CtrlShift = "horizontal", CtrlAlt = "horizontal",
+        };
+        Assert.Equal(WheelConversion.None,
+            Resolver(s).Resolve(new Mods(Ctrl: true, Shift: true, Alt: true)));
     }
 
     [Fact]
-    public void DefaultSettings_AllNone()
+    public void DefaultSettings_AltIsUnknownCode_ResolvesNoneUntilDecoded()
     {
+        // 既定の Alt="code:55" は意味未確定のため素通し（None）
         var r = new ModifierScrollResolver(new ModifierScrollSettings());
+        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Alt: true)));
         Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true)));
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Shift: true)));
-        Assert.Equal(WheelConversion.None, r.Resolve(new Mods(Ctrl: true, Shift: true)));
     }
 }
 

@@ -13,17 +13,24 @@ public sealed record ScrollSettings
     public int AutoWheelResolution { get; init; } = 3;
 
     /// <summary>
-    /// 修飾キー押下中のホイール挙動。オリジナルと同じく Ctrl / Shift / Ctrl+Shift の
-    /// 3スロットを持つ（Alt は対象外）。値は behavior 文字列（"none" / "horizontal" 等）。
-    /// 既定はユーザー ini の ScrollExCtrl/Shift/CtrlShift がいずれも 0 のため "none"。
+    /// 修飾キー押下中のホイール挙動。オリジナル v1.67 と同じく6通り
+    /// （Shift / Ctrl / Ctrl+Shift / Alt / Shift+Alt / Ctrl+Alt）を持つ。
+    /// 値は behavior 文字列（"none" / "horizontal" / 未確定の "code:NN"）。
+    /// 既定はユーザー ini 由来（Alt のみ ScrollExAlt=55、他は 0）。
     /// </summary>
     public ModifierScrollSettings ModifierScroll { get; init; } = new();
 }
 
-/// <summary>Ctrl / Shift / Ctrl+Shift それぞれのホイール挙動。</summary>
+/// <summary>
+/// 修飾キー組み合わせ別のホイール挙動。オリジナルの6スロットに対応する。
+/// 既定値はユーザーの Kazaguru.ini の ScrollEx* 由来。
+/// </summary>
 public sealed record ModifierScrollSettings
 {
-    public string Ctrl { get; init; } = "none";
-    public string Shift { get; init; } = "none";
-    public string CtrlShift { get; init; } = "none";
+    public string Shift { get; init; } = "none";        // ScrollExShift=0
+    public string Ctrl { get; init; } = "none";         // ScrollExCtrl=0
+    public string CtrlShift { get; init; } = "none";    // ScrollExCtrlShift=0
+    public string Alt { get; init; } = "code:55";       // ScrollExAlt=55（意味未確定）
+    public string ShiftAlt { get; init; } = "none";     // ScrollExShiftAlt=0
+    public string CtrlAlt { get; init; } = "none";      // ScrollExCtrlAlt=0
 }

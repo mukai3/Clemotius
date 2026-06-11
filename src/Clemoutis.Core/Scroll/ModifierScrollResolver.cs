@@ -4,8 +4,9 @@ namespace Clemoutis.Core.Scroll;
 
 /// <summary>
 /// 修飾キーの押下状態から、適用すべきホイール変換を決める。Win32 非依存。
-/// オリジナルに合わせ Ctrl / Shift / Ctrl+Shift の3通りのみを扱う（Alt は対象外）。
-/// Ctrl+Shift は単独 Ctrl・単独 Shift とは別物として優先的に判定する。
+/// オリジナル v1.67 に合わせ、押下中の修飾キーの組み合わせに完全一致する
+/// スロットを引く（Shift / Ctrl / Ctrl+Shift / Alt / Shift+Alt / Ctrl+Alt）。
+/// 上記以外の組み合わせ（修飾なし、Ctrl+Shift+Alt、Win 等）は None。
 /// </summary>
 public sealed class ModifierScrollResolver
 {
@@ -18,12 +19,17 @@ public sealed class ModifierScrollResolver
 
     public WheelConversion Resolve(IModifierState m)
     {
-        if (m.Ctrl && m.Shift)
-            return ScrollBehaviorParser.Parse(_settings.CtrlShift);
-        if (m.Ctrl)
-            return ScrollBehaviorParser.Parse(_settings.Ctrl);
-        if (m.Shift)
-            return ScrollBehaviorParser.Parse(_settings.Shift);
-        return WheelConversion.None;
+        // 押下中の Ctrl/Shift/Alt の組み合わせに完全一致するスロットだけを採用
+        string? behavior = (m.Ctrl, m.Shift, m.Alt) switch
+        {
+            (false, true, false) => _settings.Shift,
+            (true, false, false) => _settings.Ctrl,
+            (true, true, false) => _settings.CtrlShift,
+            (false, false, true) => _settings.Alt,
+            (false, true, true) => _settings.ShiftAlt,
+            (true, false, true) => _settings.CtrlAlt,
+            _ => null,
+        };
+        return ScrollBehaviorParser.Parse(behavior);
     }
 }

@@ -72,7 +72,7 @@
    - プロファイル単位でジェスチャー無効化可（ゲーム・リモートデスクトップ等の除外用）
 2. **スクロール拡張**
    - 水平スクロールバー上で縦ホイール → 水平スクロールに変換
-   - 修飾キー押下中のホイールを変換。オリジナルに合わせ **Ctrl / Shift / Ctrl+Shift の3通り**それぞれに挙動（"none" / "horizontal" 等）を割り当てる。**Alt は対象外**（オリジナルのUI選択肢に無い）
+   - 修飾キー押下中のホイールを変換。オリジナル v1.67 に合わせ **6通り**（Shift / Ctrl / Ctrl+Shift / Alt / Shift+Alt / Ctrl+Alt）それぞれに挙動（"none" / "horizontal" / 未確定 "code:NN"）を割り当てる
 3. **常駐 UI**
    - タスクトレイアイコン（設定を開く・一時停止・終了）
    - WinForms 設定画面（プロファイル一覧、ジェスチャー⇔アクション編集、スクロール設定）
@@ -176,7 +176,7 @@
 
 ホイール受信 → カーソル下の UI 要素を判定 →
 
-- 修飾キー押下中（Ctrl / Shift / Ctrl+Shift）→ 対応スロットの挙動に従い変換（Ctrl+Shift は単独 Ctrl/Shift と別物として優先判定）
+- 修飾キー押下中（Shift / Ctrl / Ctrl+Shift / Alt / Shift+Alt / Ctrl+Alt のいずれか完全一致）→ 対応スロットの挙動に従い変換
 - 修飾キーなしで水平スクロールバー上 → `WM_MOUSEWHEEL` を飲み込み水平スクロールへ変換
 - どちらでもない → 素通し
 
@@ -207,9 +207,12 @@
     "wheelResolution": 1,
     "autoWheelResolution": 3,
     "modifierScroll": {
-      "ctrl": "none",
       "shift": "none",
-      "ctrlShift": "none"
+      "ctrl": "none",
+      "ctrlShift": "none",
+      "alt": "code:55",
+      "shiftAlt": "none",
+      "ctrlAlt": "none"
     }
   },
   "tray": {
@@ -256,7 +259,7 @@
 | `scroll.mergeWheelDelta` | 2 | `MergeWheelDelta` | ホイールデルタ統合 |
 | `scroll.wheelResolution` | 1 | `WheelResolution` | ホイール解像度 |
 | `scroll.autoWheelResolution` | 3 | `AutoWheelResolution` | 自動ホイール解像度 |
-| `scroll.modifierScroll` | ctrl/shift/ctrlShift とも "none" | `ScrollExCtrl`=0 / `ScrollExShift`=0 / `ScrollExCtrlShift`=0 | 修飾キー別の拡張スクロール動作。オリジナルは **Ctrl / Shift / Ctrl+Shift** の3通りを選択でき、選択肢に「水平スクロール」を含む。**Alt は対象外**。ユーザー設定では3つとも 0（=none）。`ScrollExAlt`=55 等のコードの意味（および Alt 系キーが ini にある理由）は動的解析 D.4 で確定 |
+| `scroll.modifierScroll` | shift/ctrl/ctrlShift/shiftAlt/ctrlAlt="none", alt="code:55" | `ScrollExShift/Ctrl/CtrlShift/ShiftAlt/CtrlAlt`=0, `ScrollExAlt`=55 | 修飾キー別の拡張スクロール動作。オリジナル v1.67 は **Shift / Ctrl / Ctrl+Shift / Alt / Shift+Alt / Ctrl+Alt** の6通りを選択でき、選択肢に「水平スクロール」を含む（ヘルプ「拡張スクロール」タブで確認）。ユーザー設定は Alt のみ 55（意味未確定）、他は 0。`53/55/58` 等コードの意味は動的解析 D.4 で確定 |
 | `tray.showTrayIcon` | true | `ShowTrayIcon` | トレイアイコン表示 |
 | `tray.showBalloonTip` | false | `ShowBalloonTip`=0 | バルーン通知 |
 | `tray.menuStyle` | 2 | `TrayIconMenuStyle` | トレイメニュー様式 |

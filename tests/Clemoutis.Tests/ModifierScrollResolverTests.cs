@@ -74,10 +74,22 @@ public class ScrollBehaviorParserTests
     [InlineData("Horizontal", WheelConversion.Horizontal)]
     [InlineData("none", WheelConversion.None)]
     [InlineData("passthrough", WheelConversion.None)]
-    [InlineData("code:55", WheelConversion.None)]
     [InlineData("", WheelConversion.None)]
     [InlineData(null, WheelConversion.None)]
     public void Parse_MapsBehaviors(string? behavior, WheelConversion expected)
+    {
+        Assert.Equal(expected, ScrollBehaviorParser.Parse(behavior));
+    }
+
+    [Theory]
+    // 動的解析で確定したコードの方向ビット（bit3=0x08: 1=水平/0=垂直）
+    [InlineData("code:58", WheelConversion.Horizontal)] // 水平既定/Shift
+    [InlineData("code:57", WheelConversion.Horizontal)] // 水平3列
+    [InlineData("code:53", WheelConversion.None)]       // 垂直既定/Ctrl
+    [InlineData("code:50", WheelConversion.None)]       // 垂直1行
+    [InlineData("code:55", WheelConversion.None)]       // 垂直（bit3立たず）
+    [InlineData("code:abc", WheelConversion.None)]      // 不正コードは素通し
+    public void Parse_DecodesOriginalCodeDirectionBit(string behavior, WheelConversion expected)
     {
         Assert.Equal(expected, ScrollBehaviorParser.Parse(behavior));
     }

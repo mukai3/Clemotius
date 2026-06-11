@@ -7,17 +7,36 @@ namespace Clemoutis.Core.Scroll;
 /// </summary>
 public static class ScrollBehaviorParser
 {
+    // オリジナルのスクロール動作コードの方向ビット。
+    // 動的解析（appdefault→modscroll の差分）で確定: 57(水平3列)/58(水平既定)は水平、
+    // 50(垂直1行)/53(垂直既定)は垂直。全サンプルで bit3(0x08)=方向(1=水平/0=垂直) が整合。
+    // 量・単位（行/列/ページ数）の完全な意味は未確定だが、方向だけは判別できる。
+    private const int HorizontalDirectionBit = 0x08;
+
     public static WheelConversion Parse(string? behavior)
     {
         if (string.IsNullOrWhiteSpace(behavior))
             return WheelConversion.None;
 
-        return behavior.Trim().ToLowerInvariant() switch
+        string s = behavior.Trim().ToLowerInvariant();
+        switch (s)
         {
-            "horizontal" => WheelConversion.Horizontal,
-            "none" or "passthrough" => WheelConversion.None,
-            // "code:NN" や未知の文字列は、意味が確定するまで素通し
-            _ => WheelConversion.None,
-        };
+            case "horizontal":
+                return WheelConversion.Horizontal;
+            case "none" or "passthrough":
+                return WheelConversion.None;
+        }
+
+        // "code:NN"（オリジナルのコード値）は方向ビットで水平/垂直を判定する。
+        // 垂直は通常スクロールと同義なので素通し（None）扱い。
+        if (s.StartsWith("code:", StringComparison.Ordinal)
+            && int.TryParse(s.AsSpan("code:".Length), out int code))
+        {
+            return (code & HorizontalDirectionBit) != 0
+                ? WheelConversion.Horizontal
+                : WheelConversion.None;
+        }
+
+        return WheelConversion.None;
     }
 }

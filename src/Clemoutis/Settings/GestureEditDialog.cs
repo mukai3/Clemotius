@@ -15,6 +15,7 @@ internal sealed class GestureEditDialog : Form
     private readonly ComboBox _type = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly KeyCaptureBox _keys = new();
     private readonly ComboBox _command = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _preset = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label _paramLabel = new();
 
     /// <summary>ストローク付き編集の結果。</summary>
@@ -84,9 +85,13 @@ internal sealed class GestureEditDialog : Form
         _keys.SetBounds(160, top, 180, 23);
         _command.SetBounds(160, top, 180, 23);
         _command.Items.AddRange(Enum.GetNames<AppCommand>());
+        _preset.SetBounds(160, top, 208, 23);
+        _preset.DataSource = PresetCommands.All.ToList();
+        _preset.DisplayMember = nameof(PresetCommand.Display);
         controls.Add(_paramLabel);
         controls.Add(_keys);
         controls.Add(_command);
+        controls.Add(_preset);
         top += 45;
 
         var ok = new Button { Text = "OK", Left = 194, Top = top, Width = 80 };
@@ -135,10 +140,12 @@ internal sealed class GestureEditDialog : Form
         string type = (string?)_type.SelectedItem ?? ActionDisplay.TypeKey;
         bool isKey = type == ActionDisplay.TypeKey;
         bool isCmd = type == ActionDisplay.TypeAppCommand;
+        bool isPreset = type == ActionDisplay.TypePreset;
         _keys.Visible = isKey;
         _command.Visible = isCmd;
-        _paramLabel.Visible = isKey || isCmd;
-        _paramLabel.Text = isKey ? "キー(クリックして押す)" : isCmd ? "コマンド" : "";
+        _preset.Visible = isPreset;
+        _paramLabel.Visible = isKey || isCmd || isPreset;
+        _paramLabel.Text = isKey ? "キー(クリックして押す)" : isCmd ? "コマンド" : isPreset ? "プリセット" : "";
         if (isCmd && _command.SelectedIndex < 0 && _command.Items.Count > 0)
             _command.SelectedIndex = 0;
     }
@@ -178,6 +185,15 @@ internal sealed class GestureEditDialog : Form
                 return false;
             }
             action = new KeyAction(stroke);
+        }
+        else if (type == ActionDisplay.TypePreset)
+        {
+            if (_preset.SelectedItem is not PresetCommand preset)
+            {
+                Warn("プリセットを選択してください。");
+                return false;
+            }
+            action = new KeyAction(preset.Stroke); // プリセットはキー送信に展開
         }
         else if (type == ActionDisplay.TypeAppCommand)
         {

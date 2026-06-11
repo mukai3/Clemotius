@@ -13,7 +13,7 @@ internal sealed class GestureEditDialog : Form
     private readonly bool _actionOnly;
     private readonly TextBox _strokes = new() { CharacterCasing = CharacterCasing.Upper };
     private readonly ComboBox _type = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly TextBox _keys = new();
+    private readonly KeyCaptureBox _keys = new();
     private readonly ComboBox _command = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label _paramLabel = new();
 
@@ -112,7 +112,7 @@ internal sealed class GestureEditDialog : Form
         switch (action)
         {
             case KeyAction k:
-                _keys.Text = k.Stroke.ToString();
+                _keys.Stroke = k.Stroke;
                 break;
             case AppCommandAction c:
                 _command.SelectedItem = c.Command.ToString();
@@ -128,7 +128,7 @@ internal sealed class GestureEditDialog : Form
         _keys.Visible = isKey;
         _command.Visible = isCmd;
         _paramLabel.Visible = isKey || isCmd;
-        _paramLabel.Text = isKey ? "キー (例 Ctrl+W)" : isCmd ? "コマンド" : "";
+        _paramLabel.Text = isKey ? "キー（クリックして押す）" : isCmd ? "コマンド" : "";
         if (isCmd && _command.SelectedIndex < 0 && _command.Items.Count > 0)
             _command.SelectedIndex = 0;
     }
@@ -162,9 +162,9 @@ internal sealed class GestureEditDialog : Form
         string type = (string?)_type.SelectedItem ?? ActionDisplay.TypeKey;
         if (type == ActionDisplay.TypeKey)
         {
-            if (!KeyStrokeParser.TryParse(_keys.Text, out var stroke, out var error))
+            if (_keys.Stroke is not { } stroke)
             {
-                Warn(error);
+                Warn("キーを押して設定してください。");
                 return false;
             }
             action = new KeyAction(stroke);

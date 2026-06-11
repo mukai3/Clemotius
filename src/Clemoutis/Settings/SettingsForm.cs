@@ -18,6 +18,8 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _profilePattern = new();
     private readonly CheckBox _gesturesEnabled = new() { Text = "このプロファイルでジェスチャーを有効にする" };
     private readonly ListView _gestureList = new();
+    private readonly Label _wheelUpLabel = new();
+    private readonly Label _wheelDownLabel = new();
 
     // --- 拡張スクロール タブ ---
     private readonly Dictionary<string, ComboBox> _modifierCombos = new();
@@ -93,7 +95,7 @@ internal sealed class SettingsForm : Form
         _gesturesEnabled.SetBounds(12, 72, 380, 23);
         _gesturesEnabled.CheckedChanged += (_, _) => SaveProfileHeader();
 
-        _gestureList.SetBounds(12, 102, 436, 220);
+        _gestureList.SetBounds(12, 102, 436, 180);
         _gestureList.View = View.Details;
         _gestureList.FullRowSelect = true;
         _gestureList.MultiSelect = false;
@@ -101,19 +103,49 @@ internal sealed class SettingsForm : Form
         _gestureList.Columns.Add("アクション", 310);
         _gestureList.DoubleClick += (_, _) => EditGesture();
 
-        var add = new Button { Text = "追加", Left = 12, Top = 330, Width = 80 };
-        var edit = new Button { Text = "編集", Left = 98, Top = 330, Width = 80 };
-        var remove = new Button { Text = "削除", Left = 184, Top = 330, Width = 80 };
+        var add = new Button { Text = "追加", Left = 12, Top = 288, Width = 80 };
+        var edit = new Button { Text = "編集", Left = 98, Top = 288, Width = 80 };
+        var remove = new Button { Text = "削除", Left = 184, Top = 288, Width = 80 };
         add.Click += (_, _) => AddGesture();
         edit.Click += (_, _) => EditGesture();
         remove.Click += (_, _) => RemoveGesture();
 
+        var wheelGroup = new GroupBox { Text = "右ボタン + ホイール" };
+        wheelGroup.SetBounds(12, 320, 436, 56);
+        var wheelUpBtn = new Button { Text = "上を設定...", Left = 8, Top = 22, Width = 90 };
+        var wheelDownBtn = new Button { Text = "下を設定...", Left = 224, Top = 22, Width = 90 };
+        wheelUpBtn.Click += (_, _) => EditWheelAction(up: true);
+        wheelDownBtn.Click += (_, _) => EditWheelAction(up: false);
+        _wheelUpLabel.SetBounds(102, 26, 120, 20);
+        _wheelDownLabel.SetBounds(318, 26, 110, 20);
+        wheelGroup.Controls.AddRange(new Control[] { wheelUpBtn, _wheelUpLabel, wheelDownBtn, _wheelDownLabel });
+
         page.Controls.AddRange(new Control[]
         {
             _profileCombo, addProfile, removeProfile, patternLabel, _profilePattern,
-            _gesturesEnabled, _gestureList, add, edit, remove,
+            _gesturesEnabled, _gestureList, add, edit, remove, wheelGroup,
         });
         return page;
+    }
+
+    private void EditWheelAction(bool up)
+    {
+        if (Selected is not { } p)
+            return;
+        var current = up ? p.WheelUp : p.WheelDown;
+        string title = up ? "右ボタン + ホイール上" : "右ボタン + ホイール下";
+        using var dlg = new GestureEditDialog(current, title);
+        if (dlg.ShowDialog(this) != DialogResult.OK)
+            return;
+        if (up) p.WheelUp = dlg.ResultAction;
+        else p.WheelDown = dlg.ResultAction;
+        RefreshWheelLabels();
+    }
+
+    private void RefreshWheelLabels()
+    {
+        _wheelUpLabel.Text = Selected?.WheelUp is { } u ? ActionDisplay.Describe(u) : "（なし）";
+        _wheelDownLabel.Text = Selected?.WheelDown is { } d ? ActionDisplay.Describe(d) : "（なし）";
     }
 
     // ---------------------------------------------------------------- 拡張スクロール
@@ -317,6 +349,7 @@ internal sealed class SettingsForm : Form
         _profilePattern.Text = p.ProcessPattern;
         _gesturesEnabled.Checked = p.GesturesEnabled;
         RefreshGestureList();
+        RefreshWheelLabels();
     }
 
     private void SaveProfileHeader()

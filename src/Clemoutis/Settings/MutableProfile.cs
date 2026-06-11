@@ -1,3 +1,4 @@
+using Clemoutis.Core.Actions;
 using Clemoutis.Core.Config;
 using Clemoutis.Core.Gestures;
 
@@ -10,6 +11,8 @@ internal sealed class MutableProfile
     public string ProcessPattern { get; set; } = "*";
     public bool GesturesEnabled { get; set; } = true;
     public List<GestureBinding> Gestures { get; } = new();
+    public GestureAction? WheelUp { get; set; }
+    public GestureAction? WheelDown { get; set; }
 
     public override string ToString() => $"{Name} ({ProcessPattern})";
 
@@ -20,6 +23,8 @@ internal sealed class MutableProfile
             Name = p.Name,
             ProcessPattern = p.ProcessPattern,
             GesturesEnabled = p.GesturesEnabled,
+            WheelUp = p.WheelUp,
+            WheelDown = p.WheelDown,
         };
         m.Gestures.AddRange(p.Gestures);
         return m;
@@ -31,5 +36,7 @@ internal sealed class MutableProfile
         ProcessPattern = ProcessPattern,
         GesturesEnabled = GesturesEnabled,
         Gestures = Gestures.ToArray(),
+        WheelUp = WheelUp,
+        WheelDown = WheelDown,
     };
 }

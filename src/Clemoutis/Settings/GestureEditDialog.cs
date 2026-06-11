@@ -65,8 +65,11 @@ internal sealed class GestureEditDialog : Form
         if (!_actionOnly)
         {
             controls.Add(new Label { Text = "ストローク (U/D/L/R)", Left = 12, Top = top + 3, Width = 140 });
-            _strokes.SetBounds(160, top, 180, 23);
+            _strokes.SetBounds(160, top, 110, 23);
+            var captureBtn = new Button { Text = "マウスで入力...", Left = 276, Top = top - 1, Width = 72 };
+            captureBtn.Click += OnCaptureStroke;
             controls.Add(_strokes);
+            controls.Add(captureBtn);
             top += 33;
         }
 
@@ -104,6 +107,13 @@ internal sealed class GestureEditDialog : Form
         Controls.AddRange(controls.ToArray());
         AcceptButton = ok;
         CancelButton = cancel;
+    }
+
+    private void OnCaptureStroke(object? sender, EventArgs e)
+    {
+        using var dlg = new StrokeCaptureDialog(_strokes.Text.Trim());
+        if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result is { } strokes)
+            _strokes.Text = strokes;
     }
 
     private void LoadAction(GestureAction action)

@@ -16,8 +16,8 @@ public sealed record ScrollSettings
     ///   垂直バー=9行スクロール(53)→垂直方向＝通常スクロール扱い "none"、
     ///   水平バー=水平6列スクロール(58)→水平化 "horizontal"。
     /// </summary>
-    public string OnVerticalScrollbar { get; init; } = "none";
-    public string OnHorizontalScrollbar { get; init; } = "horizontal";
+    public string OnVerticalScrollbar { get; init; } = "code:53";   // 9 行スクロール（垂直＝通常）
+    public string OnHorizontalScrollbar { get; init; } = "code:58"; // 水平 6 列スクロール（＝水平化）
 
     public int MergeWheelDelta { get; init; } = 2;
     public int WheelResolution { get; init; } = 1;

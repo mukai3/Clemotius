@@ -180,7 +180,6 @@ internal sealed class SettingsForm : Form
             group.Controls.Add(new Label { Text = label, Left = 16, Top = top + 3, Width = 200 });
             var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
             combo.SetBounds(230, top, 220, 23);
-            combo.Format += (s, e) => e.Value = ScrollBehaviorChoice.Display((string)e.ListItem!);
             _modifierCombos[key] = combo;
             group.Controls.Add(combo);
             top += 32;
@@ -199,10 +198,8 @@ internal sealed class SettingsForm : Form
 
         group.Controls.Add(new Label { Text = "垂直スクロールバー上でホイール回転", Left = 16, Top = 31, Width = 230 });
         _onVerticalScrollbar.SetBounds(250, 28, 200, 23);
-        _onVerticalScrollbar.Format += (s, e) => e.Value = ScrollBehaviorChoice.Display((string)e.ListItem!);
         group.Controls.Add(new Label { Text = "水平スクロールバー上でホイール回転", Left = 16, Top = 63, Width = 230 });
         _onHorizontalScrollbar.SetBounds(250, 60, 200, 23);
-        _onHorizontalScrollbar.Format += (s, e) => e.Value = ScrollBehaviorChoice.Display((string)e.ListItem!);
         group.Controls.AddRange(new Control[] { _onVerticalScrollbar, _onHorizontalScrollbar });
 
         var note = new Label
@@ -263,15 +260,15 @@ internal sealed class SettingsForm : Form
             _profileCombo.SelectedIndex = 0;
 
         var ms = _original.Scroll.ModifierScroll;
-        SetCombo("Shift", ms.Shift);
-        SetCombo("Ctrl", ms.Ctrl);
-        SetCombo("CtrlShift", ms.CtrlShift);
-        SetCombo("Alt", ms.Alt);
-        SetCombo("ShiftAlt", ms.ShiftAlt);
-        SetCombo("CtrlAlt", ms.CtrlAlt);
+        BindCombo(_modifierCombos["Shift"], ScrollBehaviorChoice.Modifier, ms.Shift);
+        BindCombo(_modifierCombos["Ctrl"], ScrollBehaviorChoice.Modifier, ms.Ctrl);
+        BindCombo(_modifierCombos["CtrlShift"], ScrollBehaviorChoice.Modifier, ms.CtrlShift);
+        BindCombo(_modifierCombos["Alt"], ScrollBehaviorChoice.Modifier, ms.Alt);
+        BindCombo(_modifierCombos["ShiftAlt"], ScrollBehaviorChoice.Modifier, ms.ShiftAlt);
+        BindCombo(_modifierCombos["CtrlAlt"], ScrollBehaviorChoice.Modifier, ms.CtrlAlt);
 
-        SetScrollbarCombo(_onVerticalScrollbar, _original.Scroll.OnVerticalScrollbar);
-        SetScrollbarCombo(_onHorizontalScrollbar, _original.Scroll.OnHorizontalScrollbar);
+        BindCombo(_onVerticalScrollbar, ScrollBehaviorChoice.VerticalBar, _original.Scroll.OnVerticalScrollbar);
+        BindCombo(_onHorizontalScrollbar, ScrollBehaviorChoice.HorizontalBar, _original.Scroll.OnHorizontalScrollbar);
 
         _showTrayIcon.Checked = _original.Tray.ShowTrayIcon;
         _showBalloonTip.Checked = _original.Tray.ShowBalloonTip;
@@ -287,15 +284,18 @@ internal sealed class SettingsForm : Form
         _invalidColor.BackColor = _invalidColorValue;
     }
 
-    private void SetCombo(string key, string value) => SetScrollbarCombo(_modifierCombos[key], value);
+    private static string ComboValue(ComboBox combo) =>
+        combo.SelectedValue as string ?? (combo.SelectedItem as ScrollBehaviorChoice.Choice)?.Value ?? "none";
 
-    private static void SetScrollbarCombo(ComboBox combo, string value)
+    private static void BindCombo(
+        ComboBox combo, IReadOnlyList<ScrollBehaviorChoice.Choice> choices, string value)
     {
-        combo.Items.Clear();
-        combo.Items.AddRange(ScrollBehaviorChoice.ChoicesIncluding(value));
-        combo.SelectedItem = value;
+        combo.DisplayMember = nameof(ScrollBehaviorChoice.Choice.Display);
+        combo.ValueMember = nameof(ScrollBehaviorChoice.Choice.Value);
+        combo.DataSource = ScrollBehaviorChoice.CopyOf(choices); // コンボごとに独立リスト
+        combo.SelectedValue = value;
         if (combo.SelectedIndex < 0 && combo.Items.Count > 0)
-            combo.SelectedIndex = 0;
+            combo.SelectedIndex = 0; // 未知値は先頭（なし）にフォールバック
     }
 
     private bool ApplyChanges()
@@ -304,16 +304,16 @@ internal sealed class SettingsForm : Form
 
         var scroll = _original.Scroll with
         {
-            OnVerticalScrollbar = (string)_onVerticalScrollbar.SelectedItem!,
-            OnHorizontalScrollbar = (string)_onHorizontalScrollbar.SelectedItem!,
+            OnVerticalScrollbar = ComboValue(_onVerticalScrollbar),
+            OnHorizontalScrollbar = ComboValue(_onHorizontalScrollbar),
             ModifierScroll = new ModifierScrollSettings
             {
-                Shift = (string)_modifierCombos["Shift"].SelectedItem!,
-                Ctrl = (string)_modifierCombos["Ctrl"].SelectedItem!,
-                CtrlShift = (string)_modifierCombos["CtrlShift"].SelectedItem!,
-                Alt = (string)_modifierCombos["Alt"].SelectedItem!,
-                ShiftAlt = (string)_modifierCombos["ShiftAlt"].SelectedItem!,
-                CtrlAlt = (string)_modifierCombos["CtrlAlt"].SelectedItem!,
+                Shift = ComboValue(_modifierCombos["Shift"]),
+                Ctrl = ComboValue(_modifierCombos["Ctrl"]),
+                CtrlShift = ComboValue(_modifierCombos["CtrlShift"]),
+                Alt = ComboValue(_modifierCombos["Alt"]),
+                ShiftAlt = ComboValue(_modifierCombos["ShiftAlt"]),
+                CtrlAlt = ComboValue(_modifierCombos["CtrlAlt"]),
             },
         };
 

@@ -50,6 +50,7 @@ internal sealed class SettingsForm : Form
         _profiles = config.Profiles.Select(MutableProfile.From).ToList();
 
         Text = "Clemoutis 設定";
+        Icon = AppIcon.Shared;
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MinimizeBox = false;

@@ -32,7 +32,7 @@ internal sealed class TrayIcon : IDisposable
 
         _icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = AppIcon.Shared,
             Text = "Clemoutis",
             ContextMenuStrip = menu,
             Visible = true,

@@ -5,8 +5,9 @@ namespace Clemoutis.Core.Config;
 /// <summary>
 /// 前面アプリのプロセス名から適用プロファイルを決定する。Win32 非依存。
 /// マッチ規則: ProcessPattern がワイルドカード "*" 以外で、プロセス名に
-/// （拡張子 .exe を無視して）一致するものを優先。複数該当時は定義順で先勝ち。
-/// 該当が無ければ "*"（既定）プロファイル。それも無ければ null。
+/// （拡張子 .exe を無視して）一致するものを優先。ProcessPattern はカンマ区切りで
+/// 複数のプロセス名を指定でき、いずれかに一致すれば該当（例 "chrome, edge, brave"）。
+/// 複数プロファイルが該当する場合は定義順で先勝ち。該当が無ければ "*"（既定）。
 /// </summary>
 public sealed class ProfileResolver
 {
@@ -72,8 +73,13 @@ public sealed class ProfileResolver
 
     private static bool Matches(string pattern, string processName)
     {
-        string pat = NormalizeProcess(pattern);
-        return string.Equals(pat, processName, StringComparison.OrdinalIgnoreCase);
+        // カンマ区切りの各プロセス名のいずれかに一致すれば真
+        foreach (var part in pattern.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (string.Equals(NormalizeProcess(part), processName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     private static string NormalizeProcess(string? value)

@@ -56,6 +56,31 @@ public class ProfileResolverTests
     }
 
     [Theory]
+    [InlineData("chrome")]
+    [InlineData("edge")]
+    [InlineData("brave.exe")]
+    public void Resolve_CommaSeparatedPatterns_MatchAny(string process)
+    {
+        var r = new ProfileResolver(new[]
+        {
+            P("Default", "*"),
+            P("Browsers", "chrome.exe, edge.exe, brave.exe"),
+        });
+        Assert.Equal("Browsers", r.Resolve(process)!.Name);
+    }
+
+    [Fact]
+    public void Resolve_CommaSeparated_NoMatch_FallsBackToWildcard()
+    {
+        var r = new ProfileResolver(new[]
+        {
+            P("Default", "*"),
+            P("Browsers", "chrome, edge, brave"),
+        });
+        Assert.Equal("Default", r.Resolve("notepad")!.Name);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]

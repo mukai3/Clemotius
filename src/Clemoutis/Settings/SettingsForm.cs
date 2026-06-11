@@ -98,7 +98,7 @@ internal sealed class SettingsForm : Form
         _profileName.SetBounds(106, 46, 200, 23);
         _profileName.Leave += (_, _) => SaveProfileHeader();
 
-        var patternLabel = new Label { Text = "対象プロセス名（* で全て）", Left = 12, Top = 79, Width = 170 };
+        var patternLabel = new Label { Text = "対象プロセス（複数可,カンマ区切り）", Left = 12, Top = 79, Width = 168 };
         _profilePattern.SetBounds(186, 76, 200, 23);
         _profilePattern.Leave += (_, _) => SaveProfileHeader();
         _gesturesEnabled.SetBounds(12, 106, 380, 23);

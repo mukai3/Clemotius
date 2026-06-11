@@ -23,6 +23,11 @@ static class Program
         using (instance)
         {
             ApplicationConfiguration.Initialize();
+            // WPF オーバーレイ用に Application.Current を用意（WinForms 主体のため Run はしない）
+            _ = new System.Windows.Application
+            {
+                ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown,
+            };
             using var ctx = new AppContext(instance);
             Application.Run(ctx);
         }
@@ -43,7 +48,7 @@ internal sealed class AppContext : ApplicationContext
     private readonly ConfigStore _configStore;
     private readonly ActiveConfigProvider _configProvider;
     private readonly ScrollEnhancer _scroll;
-    private readonly GestureTrailOverlay _trail = new();
+    private readonly GestureWpfOverlay _trail = new();
     private volatile bool _drawTrail;
     private readonly System.Windows.Forms.Timer _instancePollTimer;
     // FileSystemWatcher のイベントを UI スレッドへ載せるための隠しコントロール
@@ -60,7 +65,6 @@ internal sealed class AppContext : ApplicationContext
         _configStore.Changed += OnConfigChanged;
         _configStore.Corrupted += OnConfigCorrupted;
 
-        _ = _trail.Handle; // ハンドル生成
         _trail.ApplySettings(_configStore.Current.Gesture);
         _drawTrail = _configStore.Current.Gesture.DrawStroke;
 
@@ -187,7 +191,7 @@ internal sealed class AppContext : ApplicationContext
             _mouseHook.Dispose();
             _keyboardHook.Dispose();
             _configStore.Dispose();
-            _trail.Dispose();
+            _trail.Close();
             _marshal.Dispose();
         }
         base.Dispose(disposing);

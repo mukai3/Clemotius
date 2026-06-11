@@ -1,4 +1,5 @@
 using Clemoutis.Core.Actions;
+using Clemoutis.Interop;
 
 namespace Clemoutis.Settings;
 
@@ -60,12 +61,16 @@ internal sealed class KeyCaptureBox : TextBox
             return;
         }
 
+        // Win キーは Control.ModifierKeys に反映されないため実押下状態を直接確認する
+        bool win = NativeMethods.IsKeyDown(NativeMethods.VK_LWIN)
+                || NativeMethods.IsKeyDown(NativeMethods.VK_RWIN);
+
         _stroke = new KeyStroke(
             (ushort)key,
             Ctrl: e.Control,
             Shift: e.Shift,
             Alt: e.Alt,
-            Win: (Control.ModifierKeys & Keys.LWin) != 0 || (Control.ModifierKeys & Keys.RWin) != 0);
+            Win: win);
         Text = _stroke.Value.ToString();
     }
 }

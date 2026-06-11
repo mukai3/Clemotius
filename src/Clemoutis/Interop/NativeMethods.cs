@@ -90,6 +90,12 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
 
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int vKey);
+
+    /// <summary>指定の仮想キーが現在押下されているか。</summary>
+    public static bool IsKeyDown(int vk) => (GetAsyncKeyState(vk) & 0x8000) != 0;
+
     // ── フック専用スレッドのメッセージポンプ ──
     public const uint WM_QUIT = 0x0012;
 

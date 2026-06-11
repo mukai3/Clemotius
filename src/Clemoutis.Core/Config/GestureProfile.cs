@@ -1,3 +1,4 @@
+using Clemoutis.Core.Actions;
 using Clemoutis.Core.Gestures;
 
 namespace Clemoutis.Core.Config;
@@ -15,4 +16,10 @@ public sealed record GestureProfile
     public bool GesturesEnabled { get; init; } = true;
 
     public IReadOnlyList<GestureBinding> Gestures { get; init; } = Array.Empty<GestureBinding>();
+
+    /// <summary>右ボタン押下中にホイールを上回転したときのアクション。null なら無し。</summary>
+    public GestureAction? WheelUp { get; init; }
+
+    /// <summary>右ボタン押下中にホイールを下回転したときのアクション。null なら無し。</summary>
+    public GestureAction? WheelDown { get; init; }
 }

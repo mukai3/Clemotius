@@ -32,6 +32,9 @@ public sealed record ClemoutisConfig
             new GestureBinding("LD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
             new GestureBinding("RD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
         },
+        // ユーザー ini の R+WU / R+WD（右ボタン+ホイール）由来
+        WheelUp = new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+Tab")),   // 前のタブ
+        WheelDown = new KeyAction(KeyStrokeParser.Parse("Ctrl+Tab")),       // 次のタブ
     };
 
     public static ClemoutisConfig CreateDefault() => new();

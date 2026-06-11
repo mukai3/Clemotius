@@ -50,14 +50,14 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
             if (profile is null)
                 return null;
             if (!profile.GesturesEnabled)
-                return new GestureContext(EmptyMatcher, Enabled: false);
+                return new GestureContext(EmptyMatcher, Enabled: false, WheelUp: null, WheelDown: null);
 
             if (!_matcherCache.TryGetValue(profile.Name, out var matcher))
             {
                 matcher = new GestureMatcher(profile.Gestures);
                 _matcherCache[profile.Name] = matcher;
             }
-            return new GestureContext(matcher, Enabled: true);
+            return new GestureContext(matcher, Enabled: true, profile.WheelUp, profile.WheelDown);
         }
     }
 

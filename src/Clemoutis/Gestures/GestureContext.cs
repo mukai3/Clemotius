@@ -1,12 +1,17 @@
+using Clemoutis.Core.Actions;
 using Clemoutis.Core.Gestures;
 
 namespace Clemoutis.Gestures;
 
 /// <summary>
 /// 1回のジェスチャー開始時に確定する文脈。どのプロファイルのマッチャを使うか、
-/// そのプロファイルでジェスチャーが有効かを保持する。
+/// そのプロファイルでジェスチャーが有効か、右+ホイールに割り当てたアクションを保持する。
 /// </summary>
-internal sealed record GestureContext(GestureMatcher Matcher, bool Enabled);
+internal sealed record GestureContext(
+    GestureMatcher Matcher,
+    bool Enabled,
+    GestureAction? WheelUp,
+    GestureAction? WheelDown);
 
 /// <summary>
 /// ジェスチャー開始位置からプロファイル文脈を解決する。

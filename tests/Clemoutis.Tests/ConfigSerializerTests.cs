@@ -66,6 +66,38 @@ public class ConfigSerializerTests
         Assert.Equal(3, c.Scroll.Sensitivity);
     }
 
+    [Fact]
+    public void DefaultProfile_HasWheelTabSwitchBindings()
+    {
+        // R+WU=前のタブ / R+WD=次のタブ（ユーザー ini 由来）
+        var profile = ClemoutisConfig.DefaultProfile();
+        var up = Assert.IsType<KeyAction>(profile.WheelUp);
+        var down = Assert.IsType<KeyAction>(profile.WheelDown);
+        Assert.Equal("Ctrl+Shift+Tab", up.Stroke.ToString());
+        Assert.Equal("Ctrl+Tab", down.Stroke.ToString());
+    }
+
+    [Fact]
+    public void WheelActions_RoundTrip()
+    {
+        var original = ClemoutisConfig.CreateDefault();
+        var restored = ConfigSerializer.Deserialize(ConfigSerializer.Serialize(original));
+        var up = Assert.IsType<KeyAction>(restored.Profiles[0].WheelUp);
+        Assert.Equal("Ctrl+Shift+Tab", up.Stroke.ToString());
+    }
+
+    [Fact]
+    public void NullWheelActions_RoundTrip()
+    {
+        var config = new ClemoutisConfig
+        {
+            Profiles = new[] { new GestureProfile { Name = "T", ProcessPattern = "*" } },
+        };
+        var restored = ConfigSerializer.Deserialize(ConfigSerializer.Serialize(config));
+        Assert.Null(restored.Profiles[0].WheelUp);
+        Assert.Null(restored.Profiles[0].WheelDown);
+    }
+
     private static ClemoutisConfig WithGesture(GestureBinding binding) => new()
     {
         Profiles = new[]

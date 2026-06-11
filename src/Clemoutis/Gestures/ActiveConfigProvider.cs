@@ -43,10 +43,19 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
         }
     }
 
+    private static readonly uint OwnProcessId = (uint)Environment.ProcessId;
+
     public GestureContext? Resolve(int startX, int startY)
     {
         // 開始位置直下のトップレベル窓のプロセス名でプロファイルを決める
         nint target = TargetWindowResolver.Resolve(startX, startY);
+
+        // 自アプリ（設定画面・ストローク入力ダイアログ等）の上ではジェスチャーを無効化し、
+        // 右ドラッグをダイアログ側の操作として通す
+        InputNative.GetWindowThreadProcessId(target, out uint pid);
+        if (pid == OwnProcessId)
+            return null;
+
         string? process = ProcessNameResolver.FromWindow(target);
 
         lock (_gate)

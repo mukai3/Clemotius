@@ -42,12 +42,16 @@ internal sealed class ScrollEnhancer
         // 1) 修飾キー変換が優先
         var conversion = _resolver.Resolve(_modifiers);
 
-        // 2) 修飾キーなし時はスクロールバー上判定
-        if (conversion == WheelConversion.None
-            && _settings.HorizontalOnScrollbar
-            && ScrollBarDetector.IsHorizontalScrollBar(data.pt.X, data.pt.Y))
+        // 2) 修飾キーなし時はスクロールバー上判定（向きごとの挙動）
+        if (conversion == WheelConversion.None)
         {
-            conversion = WheelConversion.Horizontal;
+            var hit = ScrollBarDetector.Detect(data.pt.X, data.pt.Y);
+            conversion = hit switch
+            {
+                ScrollBarHit.Horizontal => ScrollBehaviorParser.Parse(_settings.OnHorizontalScrollbar),
+                ScrollBarHit.Vertical => ScrollBehaviorParser.Parse(_settings.OnVerticalScrollbar),
+                _ => WheelConversion.None,
+            };
         }
 
         if (conversion == WheelConversion.Horizontal)

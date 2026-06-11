@@ -21,6 +21,9 @@ internal static class InputNative
 
     public const uint WM_APPCOMMAND = 0x0319;
     public const uint WM_CLOSE = 0x0010;
+    public const uint WM_NCHITTEST = 0x0084;
+    public const int HTHSCROLL = 6;
+    public const int HTVSCROLL = 7;
 
     public const uint GA_ROOT = 2;
 

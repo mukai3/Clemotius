@@ -79,3 +79,9 @@ Clemoutis がカバー: トレイ表示・バルーン、判定範囲（=1スト
   1. 拡張スクロールの「有効ウィンドウ」区分が無い（特に標準/単独スクロールバーの区別＝検出範囲に直結）
   2. ホイールの「垂直スクロールバー上」挙動が無く、水平も on/off に簡略化
   3. ラベル文言をオリジナル呼称へ寄せられる
+
+## 対応状況（2026-06-11 追記）
+
+- **#3 ラベル文言**: 対応済み。「1 ストロークの距離」「入力開始のタイムアウト」「長押しの待ち時間」「幅」へオリジナル呼称に変更。
+- **#2 垂直スクロールバー挙動**: 対応済み。`scroll.HorizontalOnScrollbar`(bool) を **`onVerticalScrollbar` / `onHorizontalScrollbar`**(behavior) の2スロットに変更（ini の `ScrollExOnVScrlBar=53` / `ScrollExOnHScrlBar=58` に対応）。ホイールタブを2ドロップダウン化。`ScrollEnhancer` を向き判定（`ScrollBarHit` None/Horizontal/Vertical）に拡張。
+- **#1 標準/単独スクロールバーの区別**: 部分対応（MSAA なし）。`ScrollBarDetector` を、単独 `ScrollBar` コントロールに加え **非クライアントの標準スクロールバーを `WM_NCHITTEST`（HTHSCROLL/HTVSCROLL）で検出**するよう拡張。ブラウザ等のカスタム描画スクロールバー（実 Win32 スクロールバーでない）は引き続き対象外で、厳密化は MSAA を伴う RE 課題のまま。

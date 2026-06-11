@@ -7,7 +7,16 @@ public sealed record ScrollSettings
     public int Acceleration { get; init; } = 3;
     public bool AcceleratedScroll { get; init; }
     public bool ScrollAlways { get; init; }
-    public bool HorizontalOnScrollbar { get; init; } = true;
+
+    /// <summary>
+    /// スクロールバー上でホイールを回したときの挙動。オリジナルの「ホイール」タブの
+    /// 「垂直/水平スクロールバー上でホイール回転」に対応（ini の ScrollExOnVScrlBar=53 /
+    /// ScrollExOnHScrlBar=58）。値は behavior 文字列（"none" / "horizontal" / 未確定 "code:NN"）。
+    /// 既定はユーザー ini 由来（53/58、意味未確定）。
+    /// </summary>
+    public string OnVerticalScrollbar { get; init; } = "code:53";
+    public string OnHorizontalScrollbar { get; init; } = "code:58";
+
     public int MergeWheelDelta { get; init; } = 2;
     public int WheelResolution { get; init; } = 1;
     public int AutoWheelResolution { get; init; } = 3;

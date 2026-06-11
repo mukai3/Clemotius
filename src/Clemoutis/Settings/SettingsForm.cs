@@ -23,7 +23,8 @@ internal sealed class SettingsForm : Form
     private readonly Dictionary<string, ComboBox> _modifierCombos = new();
 
     // --- ホイール タブ ---
-    private readonly CheckBox _horizontalOnScrollbar = new() { Text = "水平スクロールバー上で縦ホイールを水平スクロールにする" };
+    private readonly ComboBox _onVerticalScrollbar = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _onHorizontalScrollbar = new() { DropDownStyle = ComboBoxStyle.DropDownList };
 
     // --- 一般・詳細 タブ ---
     private readonly CheckBox _showTrayIcon = new() { Text = "タスクトレイにアイコンを表示する" };
@@ -152,14 +153,20 @@ internal sealed class SettingsForm : Form
     {
         var page = new TabPage("ホイール");
         var group = new GroupBox { Text = "スクロールバー上での動作" };
-        group.SetBounds(12, 12, 480, 90);
-        _horizontalOnScrollbar.SetBounds(16, 30, 450, 23);
-        group.Controls.Add(_horizontalOnScrollbar);
+        group.SetBounds(12, 12, 480, 100);
+
+        group.Controls.Add(new Label { Text = "垂直スクロールバー上でホイール回転", Left = 16, Top = 31, Width = 230 });
+        _onVerticalScrollbar.SetBounds(250, 28, 200, 23);
+        _onVerticalScrollbar.Format += (s, e) => e.Value = ScrollBehaviorChoice.Display((string)e.ListItem!);
+        group.Controls.Add(new Label { Text = "水平スクロールバー上でホイール回転", Left = 16, Top = 63, Width = 230 });
+        _onHorizontalScrollbar.SetBounds(250, 60, 200, 23);
+        _onHorizontalScrollbar.Format += (s, e) => e.Value = ScrollBehaviorChoice.Display((string)e.ListItem!);
+        group.Controls.AddRange(new Control[] { _onVerticalScrollbar, _onHorizontalScrollbar });
 
         var note = new Label
         {
-            Text = "※ 前面化・フォーカス合わせ・スクロール加速は本バージョンでは未実装です。",
-            Left = 12, Top = 112, Width = 480, Height = 40,
+            Text = "※ カーソル下を常にスクロール・前面化・フォーカス合わせ・スクロール加速は本バージョンでは未実装です。",
+            Left = 12, Top = 122, Width = 480, Height = 40,
         };
         page.Controls.AddRange(new Control[] { group, note });
         return page;
@@ -179,15 +186,15 @@ internal sealed class SettingsForm : Form
         var gestureGroup = new GroupBox { Text = "ジェスチャーの詳細" };
         gestureGroup.SetBounds(12, 100, 480, 200);
 
-        gestureGroup.Controls.Add(new Label { Text = "判定範囲 (px)", Left = 16, Top = 30, Width = 150 });
+        gestureGroup.Controls.Add(new Label { Text = "1 ストロークの距離 (px)", Left = 16, Top = 30, Width = 160 });
         _range.SetBounds(180, 27, 80, 23);
-        gestureGroup.Controls.Add(new Label { Text = "タイムアウト (ms)", Left = 16, Top = 60, Width = 150 });
+        gestureGroup.Controls.Add(new Label { Text = "入力開始のタイムアウト (ms)", Left = 16, Top = 60, Width = 160 });
         _timeout.SetBounds(180, 57, 80, 23);
-        gestureGroup.Controls.Add(new Label { Text = "長押し判定 (ms)", Left = 16, Top = 90, Width = 150 });
+        gestureGroup.Controls.Add(new Label { Text = "長押しの待ち時間 (ms)", Left = 16, Top = 90, Width = 160 });
         _pushHold.SetBounds(180, 87, 80, 23);
 
         _drawStroke.SetBounds(16, 120, 300, 23);
-        gestureGroup.Controls.Add(new Label { Text = "線幅 (px)", Left = 16, Top = 152, Width = 150 });
+        gestureGroup.Controls.Add(new Label { Text = "幅 (px)", Left = 16, Top = 152, Width = 150 });
         _strokeWidth.SetBounds(180, 149, 80, 23);
         _validColor.SetBounds(280, 147, 90, 27);
         _invalidColor.SetBounds(376, 147, 90, 27);
@@ -218,7 +225,8 @@ internal sealed class SettingsForm : Form
         SetCombo("ShiftAlt", ms.ShiftAlt);
         SetCombo("CtrlAlt", ms.CtrlAlt);
 
-        _horizontalOnScrollbar.Checked = _original.Scroll.HorizontalOnScrollbar;
+        SetScrollbarCombo(_onVerticalScrollbar, _original.Scroll.OnVerticalScrollbar);
+        SetScrollbarCombo(_onHorizontalScrollbar, _original.Scroll.OnHorizontalScrollbar);
 
         _showTrayIcon.Checked = _original.Tray.ShowTrayIcon;
         _showBalloonTip.Checked = _original.Tray.ShowBalloonTip;
@@ -233,9 +241,10 @@ internal sealed class SettingsForm : Form
         _invalidColor.BackColor = _invalidColorValue;
     }
 
-    private void SetCombo(string key, string value)
+    private void SetCombo(string key, string value) => SetScrollbarCombo(_modifierCombos[key], value);
+
+    private static void SetScrollbarCombo(ComboBox combo, string value)
     {
-        var combo = _modifierCombos[key];
         combo.Items.Clear();
         combo.Items.AddRange(ScrollBehaviorChoice.ChoicesIncluding(value));
         combo.SelectedItem = value;
@@ -249,7 +258,8 @@ internal sealed class SettingsForm : Form
 
         var scroll = _original.Scroll with
         {
-            HorizontalOnScrollbar = _horizontalOnScrollbar.Checked,
+            OnVerticalScrollbar = (string)_onVerticalScrollbar.SelectedItem!,
+            OnHorizontalScrollbar = (string)_onHorizontalScrollbar.SelectedItem!,
             ModifierScroll = new ModifierScrollSettings
             {
                 Shift = (string)_modifierCombos["Shift"].SelectedItem!,

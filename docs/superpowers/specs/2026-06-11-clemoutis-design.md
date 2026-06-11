@@ -202,7 +202,8 @@
     "acceleration": 3,
     "acceleratedScroll": false,
     "scrollAlways": false,
-    "horizontalOnScrollbar": true,
+    "onVerticalScrollbar": "code:53",
+    "onHorizontalScrollbar": "code:58",
     "mergeWheelDelta": 2,
     "wheelResolution": 1,
     "autoWheelResolution": 3,
@@ -256,6 +257,8 @@
 | `scroll.acceleration` | 3 | `Acceleration` | スクロール加速度 |
 | `scroll.acceleratedScroll` | false | `AcceleratedScroll`=0 | スクロール加速の有効/無効 |
 | `scroll.scrollAlways` | false | `ScrollAlways`=0 | 常時カーソル下スクロール（v1未実装機能・値のみ保持） |
+| `scroll.onVerticalScrollbar` | `code:53` | `ScrollExOnVScrlBar`=53 | 垂直スクロールバー上でホイール回転時の挙動。オリジナル「ホイール」タブのドロップダウン。意味未確定（D.4） |
+| `scroll.onHorizontalScrollbar` | `code:58` | `ScrollExOnHScrlBar`=58 | 水平スクロールバー上でホイール回転時の挙動。同上。`horizontal` を選べば縦ホイール→水平スクロール |
 | `scroll.mergeWheelDelta` | 2 | `MergeWheelDelta` | ホイールデルタ統合 |
 | `scroll.wheelResolution` | 1 | `WheelResolution` | ホイール解像度 |
 | `scroll.autoWheelResolution` | 3 | `AutoWheelResolution` | 自動ホイール解像度 |

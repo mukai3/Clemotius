@@ -2,32 +2,50 @@ using Clemoutis.Interop;
 
 namespace Clemoutis.Scroll;
 
+/// <summary>カーソル直下のスクロールバーの向き。</summary>
+internal enum ScrollBarHit
+{
+    None,
+    Horizontal,
+    Vertical,
+}
+
 /// <summary>
-/// カーソル直下が水平スクロールバーかを判定する。
-///
-/// v1 は Win32 のクラス名/スタイル判定のみ。これは独立した "ScrollBar" コントロール
-/// （SBS_HORZ）を検出できるが、多くのアプリのスクロールバーはウィンドウの非クライアント
-/// 領域（WS_HSCROLL）で別 HWND を持たないため検出できない。オリジナルが使う MSAA による
-/// 厳密判定は後続（設計書の RE 方針）で追加する。
+/// カーソル直下がスクロールバーかどうか、およびその向きを判定する。
+/// オリジナルが区別する2種をカバーする:
+///   - 単独スクロールバー（独立した "ScrollBar" コントロール）: クラス名＋スタイルで判定
+///   - 標準スクロールバー（ウィンドウ非クライアントの WS_HSCROLL/WS_VSCROLL）: WM_NCHITTEST で判定
+/// ブラウザ等のカスタム描画スクロールバー（実 Win32 スクロールバーでない）は検出できない。
+/// より厳密な判定は MSAA で（設計の RE 課題）。
 /// </summary>
 internal static class ScrollBarDetector
 {
     private const int GWL_STYLE = -16;
-    private const int SBS_VERT = 0x0001; // 立っていれば垂直スクロールバー
+    private const int SBS_VERT = 0x0001; // 立っていれば垂直（単独スクロールバー）
 
-    public static bool IsHorizontalScrollBar(int x, int y)
+    public static ScrollBarHit Detect(int x, int y)
     {
         var pt = new NativeMethods.POINT { X = x, Y = y };
         nint hwnd = InputNative.WindowFromPoint(pt);
         if (hwnd == 0)
-            return false;
+            return ScrollBarHit.None;
 
-        if (!GetClassName(hwnd).Equals("ScrollBar", StringComparison.OrdinalIgnoreCase))
-            return false;
+        // 1) 単独スクロールバー コントロール
+        if (GetClassName(hwnd).Equals("ScrollBar", StringComparison.OrdinalIgnoreCase))
+        {
+            int style = InputNative.GetWindowLongW(hwnd, GWL_STYLE);
+            return (style & SBS_VERT) != 0 ? ScrollBarHit.Vertical : ScrollBarHit.Horizontal;
+        }
 
-        int style = InputNative.GetWindowLongW(hwnd, GWL_STYLE);
-        // SBS_VERT(0x1) が立っていれば垂直、立っていなければ水平
-        return (style & SBS_VERT) == 0;
+        // 2) 非クライアントの標準スクロールバー: ウィンドウにヒットテストを問い合わせる
+        nint lParam = unchecked((nint)((y << 16) | (x & 0xFFFF)));
+        nint hit = InputNative.SendMessageW(hwnd, InputNative.WM_NCHITTEST, 0, lParam);
+        return (int)hit switch
+        {
+            InputNative.HTHSCROLL => ScrollBarHit.Horizontal,
+            InputNative.HTVSCROLL => ScrollBarHit.Vertical,
+            _ => ScrollBarHit.None,
+        };
     }
 
     private static string GetClassName(nint hwnd)

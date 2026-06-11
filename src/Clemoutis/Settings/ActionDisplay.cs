@@ -9,7 +9,9 @@ internal static class ActionDisplay
     public const string TypeAppCommand = "コマンド";
     public const string TypeClose = "閉じる";
 
-    public static string[] TypeNames => new[] { TypeKey, TypeAppCommand, TypeClose };
+    // アクション種別「閉じる」(WM_CLOSE) は選択肢から除外（コマンドの Close で代替可能）。
+    // CloseAction の表示は既存データ互換のため Describe/TypeNameOf には残す。
+    public static string[] TypeNames => new[] { TypeKey, TypeAppCommand };
 
     /// <summary>一覧表示用の説明文。</summary>
     public static string Describe(GestureAction action) => action switch

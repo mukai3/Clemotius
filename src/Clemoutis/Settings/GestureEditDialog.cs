@@ -65,8 +65,8 @@ internal sealed class GestureEditDialog : Form
         if (!_actionOnly)
         {
             controls.Add(new Label { Text = "ストローク (U/D/L/R)", Left = 12, Top = top + 3, Width = 140 });
-            _strokes.SetBounds(160, top, 110, 23);
-            var captureBtn = new Button { Text = "マウスで入力...", Left = 276, Top = top - 1, Width = 72 };
+            _strokes.SetBounds(160, top, 96, 23);
+            var captureBtn = new Button { Text = "マウスで入力...", Left = 262, Top = top - 1, Width = 106 };
             captureBtn.Click += OnCaptureStroke;
             controls.Add(_strokes);
             controls.Add(captureBtn);
@@ -89,8 +89,8 @@ internal sealed class GestureEditDialog : Form
         controls.Add(_command);
         top += 45;
 
-        var ok = new Button { Text = "OK", Left = 174, Top = top, Width = 80 };
-        var cancel = new Button { Text = "キャンセル", DialogResult = DialogResult.Cancel, Left = 260, Top = top, Width = 80 };
+        var ok = new Button { Text = "OK", Left = 194, Top = top, Width = 80 };
+        var cancel = new Button { Text = "キャンセル", DialogResult = DialogResult.Cancel, Left = 288, Top = top, Width = 80 };
         ok.Click += OnOk;
         controls.Add(ok);
         controls.Add(cancel);
@@ -103,7 +103,7 @@ internal sealed class GestureEditDialog : Form
             controls.Add(clear);
         }
 
-        ClientSize = new Size(360, top + 38);
+        ClientSize = new Size(380, top + 38);
         Controls.AddRange(controls.ToArray());
         AcceptButton = ok;
         CancelButton = cancel;

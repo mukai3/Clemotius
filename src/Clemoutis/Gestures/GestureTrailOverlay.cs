@@ -55,7 +55,12 @@ internal sealed class GestureTrailOverlay : Form
         _points.Clear();
         _points.Add(ToClient(screenX, screenY));
         if (!Visible)
+        {
+            // 表示する前に空状態を描画して、前回の軌跡が一瞬見えるのを防ぐ
+            Invalidate();
+            Update();
             Visible = true;
+        }
         Invalidate();
     }
 

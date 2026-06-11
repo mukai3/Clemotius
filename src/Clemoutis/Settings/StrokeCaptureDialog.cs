@@ -32,17 +32,14 @@ internal sealed class StrokeCaptureDialog : Form
         var hint = new Label
         {
             Dock = DockStyle.Bottom, Height = 24, TextAlign = ContentAlignment.MiddleCenter,
-            Text = "左ボタンでドラッグ → 離すと確定",
+            Text = "左/右ボタンでドラッグ → 離すと確定",
         };
-        var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Width = 80 };
-        var cancel = new Button { Text = "キャンセル", DialogResult = DialogResult.Cancel, Width = 80 };
-        var clear = new Button { Text = "クリア", Width = 80 };
-        var buttons = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(6),
-        };
+        var clear = new Button { Text = "クリア", Width = 80, Top = 8, Left = 8 };
+        var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Width = 80, Top = 8, Left = 184 };
+        var cancel = new Button { Text = "キャンセル", DialogResult = DialogResult.Cancel, Width = 80, Top = 8, Left = 272 };
         clear.Click += (_, _) => ResetTrail();
-        buttons.Controls.AddRange(new Control[] { cancel, ok, clear });
+        var buttons = new Panel { Dock = DockStyle.Bottom, Height = 44 };
+        buttons.Controls.AddRange(new Control[] { clear, ok, cancel });
 
         _canvas.MouseDown += OnCanvasMouseDown;
         _canvas.MouseMove += OnCanvasMouseMove;
@@ -70,7 +67,7 @@ internal sealed class StrokeCaptureDialog : Form
 
     private void OnCanvasMouseDown(object? sender, MouseEventArgs e)
     {
-        if (e.Button != MouseButtons.Left) return;
+        if (e.Button is not (MouseButtons.Left or MouseButtons.Right)) return;
         _capturing = true;
         _trail.Clear();
         _trail.Add(e.Location);
@@ -90,7 +87,7 @@ internal sealed class StrokeCaptureDialog : Form
 
     private void OnCanvasMouseUp(object? sender, MouseEventArgs e)
     {
-        if (e.Button != MouseButtons.Left || !_capturing) return;
+        if (!_capturing) return;
         _capturing = false;
         string strokes = _encoder.ToStrokeString();
         if (strokes.Length > 0)

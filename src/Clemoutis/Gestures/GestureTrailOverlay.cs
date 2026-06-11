@@ -67,14 +67,13 @@ internal sealed class GestureTrailOverlay : Form
     {
         Bounds = SystemInformation.VirtualScreen;
         _points.Clear();
+        _commandText = "";
         _points.Add(ToClient(screenX, screenY));
+        // 初回のみ表示し、以後は隠さない。Hide/Show を繰り返すと DWM が前回フレームを
+        // 一瞬表示してしまうため（前回の軌跡が一瞬残る不具合の原因）。透過背景＋空内容は
+        // 視覚的に不可視なので常時表示で問題ない。
         if (!Visible)
-        {
-            // 表示する前に空状態を描画して、前回の軌跡が一瞬見えるのを防ぐ
-            Invalidate();
-            Update();
             Visible = true;
-        }
         Invalidate();
     }
 
@@ -88,10 +87,12 @@ internal sealed class GestureTrailOverlay : Form
 
     public void End()
     {
+        // Hide() は呼ばない。内容をクリアして再描画するだけ（透過背景＋空内容は不可視）。
+        // Hide/Show サイクルをやめることで前回フレームが一瞬残る問題を回避する。
         _points.Clear();
         _commandText = "";
         if (Visible)
-            Visible = false;
+            Invalidate();
     }
 
     private Point ToClient(int screenX, int screenY)

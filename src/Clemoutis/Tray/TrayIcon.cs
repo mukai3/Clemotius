@@ -47,7 +47,7 @@ internal sealed class TrayIcon : IDisposable
 
     public void SetPausedIndicator(bool paused)
     {
-        _icon.Text = paused ? "Clemoutis（一時停止中）" : "Clemoutis";
+        _icon.Text = paused ? "Clemoutis(一時停止中)" : "Clemoutis";
     }
 
     public void Dispose()

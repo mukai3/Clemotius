@@ -138,7 +138,7 @@ internal sealed class GestureEditDialog : Form
         _keys.Visible = isKey;
         _command.Visible = isCmd;
         _paramLabel.Visible = isKey || isCmd;
-        _paramLabel.Text = isKey ? "キー（クリックして押す）" : isCmd ? "コマンド" : "";
+        _paramLabel.Text = isKey ? "キー(クリックして押す)" : isCmd ? "コマンド" : "";
         if (isCmd && _command.SelectedIndex < 0 && _command.Items.Count > 0)
             _command.SelectedIndex = 0;
     }
@@ -150,7 +150,7 @@ internal sealed class GestureEditDialog : Form
             string strokes = _strokes.Text.Trim();
             if (!IsValidStrokes(strokes))
             {
-                Warn("ストロークは U/D/L/R の組み合わせで入力してください（例: DR）。");
+                Warn("ストロークは U/D/L/R の組み合わせで入力してください(例: DR)。");
                 return;
             }
             if (!TryBuildAction(out var act))

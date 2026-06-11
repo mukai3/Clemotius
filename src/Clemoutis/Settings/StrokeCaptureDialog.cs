@@ -99,7 +99,7 @@ internal sealed class StrokeCaptureDialog : Form
         }
         else
         {
-            _preview.Text = "（ストロークなし）";
+            _preview.Text = "(ストロークなし)";
         }
     }
 

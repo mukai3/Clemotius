@@ -16,7 +16,7 @@ internal sealed class KeyCaptureBox : TextBox
         ReadOnly = true;
         ShortcutsEnabled = false;
         Cursor = Cursors.Hand;
-        Text = "（クリックしてキーを押す）";
+        Text = "(クリックしてキーを押す)";
     }
 
     /// <summary>現在保持しているキー。未設定なら null。</summary>
@@ -26,7 +26,7 @@ internal sealed class KeyCaptureBox : TextBox
         set
         {
             _stroke = value;
-            Text = value?.ToString() ?? "（クリックしてキーを押す）";
+            Text = value?.ToString() ?? "(クリックしてキーを押す)";
         }
     }
 
@@ -40,7 +40,7 @@ internal sealed class KeyCaptureBox : TextBox
     protected override void OnLeave(EventArgs e)
     {
         base.OnLeave(e);
-        Text = _stroke?.ToString() ?? "（クリックしてキーを押す）";
+        Text = _stroke?.ToString() ?? "(クリックしてキーを押す)";
     }
 
     // 矢印・Tab 等もキャプチャ対象にする

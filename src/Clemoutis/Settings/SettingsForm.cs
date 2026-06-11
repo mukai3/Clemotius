@@ -59,17 +59,17 @@ internal sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MinimizeBox = false;
         MaximizeBox = false;
-        ClientSize = new Size(520, 485);
+        ClientSize = new Size(520, 515);
 
-        var tabs = new TabControl { Dock = DockStyle.Top, Height = 435 };
+        var tabs = new TabControl { Dock = DockStyle.Top, Height = 465 };
         tabs.TabPages.Add(BuildGestureTab());
         tabs.TabPages.Add(BuildScrollTab());
         tabs.TabPages.Add(BuildWheelTab());
         tabs.TabPages.Add(BuildGeneralTab());
 
-        var ok = new Button { Text = "OK", Width = 90, Left = 230, Top = 447 };
-        var cancel = new Button { Text = "キャンセル", Width = 90, Left = 326, Top = 447 };
-        var apply = new Button { Text = "適用", Width = 90, Left = 422, Top = 447 };
+        var ok = new Button { Text = "OK", Width = 90, Left = 230, Top = 477 };
+        var cancel = new Button { Text = "キャンセル", Width = 90, Left = 326, Top = 477 };
+        var apply = new Button { Text = "適用", Width = 90, Left = 422, Top = 477 };
         ok.Click += (_, _) => { if (ApplyChanges()) { DialogResult = DialogResult.OK; Close(); } };
         cancel.Click += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
         apply.Click += (_, _) => ApplyChanges();
@@ -98,8 +98,9 @@ internal sealed class SettingsForm : Form
         _profileName.SetBounds(106, 46, 200, 23);
         _profileName.Leave += (_, _) => SaveProfileHeader();
 
-        var patternLabel = new Label { Text = "対象プロセス（複数可,カンマ区切り）", Left = 12, Top = 79, Width = 168 };
-        _profilePattern.SetBounds(186, 76, 200, 23);
+        var patternLabel = new Label { Text = "対象プロセス", Left = 12, Top = 79, Width = 90 };
+        _profilePattern.SetBounds(106, 76, 300, 23);
+        _profilePattern.PlaceholderText = "chrome, edge, brave  (カンマ区切りで複数可)";
         _profilePattern.Leave += (_, _) => SaveProfileHeader();
         _gesturesEnabled.SetBounds(12, 106, 380, 23);
         _gesturesEnabled.CheckedChanged += (_, _) => SaveProfileHeader();
@@ -156,8 +157,8 @@ internal sealed class SettingsForm : Form
 
     private void RefreshWheelLabels()
     {
-        _wheelUpLabel.Text = Selected?.WheelUp is { } u ? ActionDisplay.Describe(u) : "（なし）";
-        _wheelDownLabel.Text = Selected?.WheelDown is { } d ? ActionDisplay.Describe(d) : "（なし）";
+        _wheelUpLabel.Text = Selected?.WheelUp is { } u ? ActionDisplay.Describe(u) : "(なし)";
+        _wheelDownLabel.Text = Selected?.WheelDown is { } d ? ActionDisplay.Describe(d) : "(なし)";
     }
 
     // ---------------------------------------------------------------- 拡張スクロール
@@ -237,7 +238,7 @@ internal sealed class SettingsForm : Form
         _drawStroke.SetBounds(16, 120, 300, 23);
         gestureGroup.Controls.Add(new Label { Text = "表示方法", Left = 16, Top = 152, Width = 150 });
         _drawingType.SetBounds(180, 149, 160, 23);
-        _drawingType.Items.AddRange(new object[] { "軌跡（線）", "コマンド表示" });
+        _drawingType.Items.AddRange(new object[] { "軌跡(線)", "コマンド表示" });
         gestureGroup.Controls.Add(new Label { Text = "幅 (px)", Left = 16, Top = 184, Width = 150 });
         _strokeWidth.SetBounds(180, 181, 80, 23);
         _validColor.SetBounds(280, 179, 90, 27);
@@ -376,7 +377,7 @@ internal sealed class SettingsForm : Form
         if (Selected is not { } p)
             return;
         _profileName.Text = p.Name;
-        _profilePattern.Text = p.IsGlobal ? "（すべてのアプリ）" : p.ProcessPattern;
+        _profilePattern.Text = p.IsGlobal ? "(すべてのアプリ)" : p.ProcessPattern;
         _gesturesEnabled.Checked = p.GesturesEnabled;
 
         // グローバルは名前・対象プロセス変更不可、削除不可

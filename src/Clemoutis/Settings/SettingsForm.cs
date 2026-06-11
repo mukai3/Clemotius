@@ -21,6 +21,7 @@ internal sealed class SettingsForm : Form
     private readonly ListView _gestureList = new();
     private readonly Label _wheelUpLabel = new();
     private readonly Label _wheelDownLabel = new();
+    private Button _removeProfileBtn = null!;
 
     // --- 拡張スクロール タブ ---
     private readonly Dictionary<string, ComboBox> _modifierCombos = new();
@@ -50,6 +51,7 @@ internal sealed class SettingsForm : Form
     {
         _original = config;
         _profiles = config.Profiles.Select(MutableProfile.From).ToList();
+        NormalizeGlobalProfile();
 
         Text = "Clemoutis 設定";
         Icon = AppIcon.Shared;
@@ -88,9 +90,9 @@ internal sealed class SettingsForm : Form
         _profileCombo.SetBounds(12, 14, 240, 23);
         _profileCombo.SelectedIndexChanged += (_, _) => OnProfileSelected();
         var addProfile = new Button { Text = "プロファイル追加", Left = 262, Top = 13, Width = 110 };
-        var removeProfile = new Button { Text = "削除", Left = 378, Top = 13, Width = 70 };
+        _removeProfileBtn = new Button { Text = "削除", Left = 378, Top = 13, Width = 70 };
         addProfile.Click += (_, _) => AddProfile();
-        removeProfile.Click += (_, _) => RemoveProfile();
+        _removeProfileBtn.Click += (_, _) => RemoveProfile();
 
         var nameLabel = new Label { Text = "プロファイル名", Left = 12, Top = 49, Width = 90 };
         _profileName.SetBounds(106, 46, 200, 23);
@@ -131,7 +133,7 @@ internal sealed class SettingsForm : Form
 
         page.Controls.AddRange(new Control[]
         {
-            _profileCombo, addProfile, removeProfile, nameLabel, _profileName,
+            _profileCombo, addProfile, _removeProfileBtn, nameLabel, _profileName,
             patternLabel, _profilePattern,
             _gesturesEnabled, _gestureList, add, edit, remove, wheelGroup,
         });
@@ -357,13 +359,31 @@ internal sealed class SettingsForm : Form
             _profileCombo.Items.Add(p);
     }
 
+    /// <summary>グローバル("*")プロファイルを1つだけ先頭に固定する。</summary>
+    private void NormalizeGlobalProfile()
+    {
+        var global = _profiles.FirstOrDefault(p => p.IsGlobal);
+        if (global is null)
+            global = new MutableProfile { Name = MutableProfile.GlobalName, ProcessPattern = "*" };
+        else
+            global.Name = MutableProfile.GlobalName;
+        _profiles.RemoveAll(p => p.IsGlobal);
+        _profiles.Insert(0, global);
+    }
+
     private void OnProfileSelected()
     {
         if (Selected is not { } p)
             return;
         _profileName.Text = p.Name;
-        _profilePattern.Text = p.ProcessPattern;
+        _profilePattern.Text = p.IsGlobal ? "（すべてのアプリ）" : p.ProcessPattern;
         _gesturesEnabled.Checked = p.GesturesEnabled;
+
+        // グローバルは名前・対象プロセス変更不可、削除不可
+        _profileName.ReadOnly = p.IsGlobal;
+        _profilePattern.ReadOnly = p.IsGlobal;
+        _removeProfileBtn.Enabled = !p.IsGlobal;
+
         RefreshGestureList();
         RefreshWheelLabels();
     }
@@ -372,10 +392,15 @@ internal sealed class SettingsForm : Form
     {
         if (Selected is not { } p)
             return;
-        if (!string.IsNullOrWhiteSpace(_profileName.Text))
-            p.Name = _profileName.Text.Trim();
-        p.ProcessPattern = string.IsNullOrWhiteSpace(_profilePattern.Text) ? "*" : _profilePattern.Text.Trim();
         p.GesturesEnabled = _gesturesEnabled.Checked;
+        if (!p.IsGlobal)
+        {
+            if (!string.IsNullOrWhiteSpace(_profileName.Text))
+                p.Name = _profileName.Text.Trim();
+            // 通常プロファイルに "*"（グローバル）は設定させない
+            string pat = _profilePattern.Text.Trim();
+            p.ProcessPattern = pat == "*" ? "" : pat;
+        }
         // コンボの表示更新
         int idx = _profileCombo.SelectedIndex;
         _profileCombo.Items[idx] = p;
@@ -383,7 +408,7 @@ internal sealed class SettingsForm : Form
 
     private void AddProfile()
     {
-        var p = new MutableProfile { Name = $"Profile{_profiles.Count + 1}", ProcessPattern = "" };
+        var p = new MutableProfile { Name = $"Profile{_profiles.Count}", ProcessPattern = "" };
         _profiles.Add(p);
         RefreshProfileCombo();
         _profileCombo.SelectedItem = p;
@@ -391,14 +416,8 @@ internal sealed class SettingsForm : Form
 
     private void RemoveProfile()
     {
-        if (Selected is not { } p)
-            return;
-        if (_profiles.Count <= 1)
-        {
-            MessageBox.Show(this, "最後のプロファイルは削除できません。", "Clemoutis",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
+        if (Selected is not { } p || p.IsGlobal)
+            return; // グローバルは削除不可
         _profiles.Remove(p);
         RefreshProfileCombo();
         _profileCombo.SelectedIndex = 0;

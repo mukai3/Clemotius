@@ -1,0 +1,11 @@
+<Page
+    x:Class="Clemoutis.SettingsUi.Pages.GeneralPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="一般">
+    <TextBlock
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Opacity="0.6"
+        Text="一般 (フェーズ2で実装)" />
+</Page>

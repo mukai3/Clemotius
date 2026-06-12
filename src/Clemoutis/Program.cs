@@ -113,6 +113,7 @@ internal sealed class AppContext : ApplicationContext
 
         _tray = new TrayIcon();
         _tray.OpenSettingsRequested += OnOpenSettings;
+        _tray.OpenWpfSettingsRequested += OnOpenWpfSettings;
         _tray.PauseChanged += OnPauseChanged;
         _tray.ExitRequested += OnExit;
 
@@ -185,6 +186,27 @@ internal sealed class AppContext : ApplicationContext
         _settingsForm.FormClosed += (_, _) => _settingsForm = null;
         _settingsForm.Show();
         BringToFront(_settingsForm);
+    }
+
+    private SettingsUi.SettingsWindow? _wpfSettings;
+
+    // TODO(フェーズ4): 正式切替時に OnOpenSettings をこの実装で置き換える
+    private void OnOpenWpfSettings()
+    {
+        if (_wpfSettings is not null)
+        {
+            _wpfSettings.BringToFront();
+            return;
+        }
+        _wpfSettings = new SettingsUi.SettingsWindow(_configStore.Current);
+        _wpfSettings.ViewModel.Applied += cfg => _configStore.Save(cfg);
+        _wpfSettings.Closed += (_, _) =>
+        {
+            _wpfSettings?.ViewModel.FlushPending();
+            _wpfSettings = null;
+        };
+        _wpfSettings.Show();
+        _wpfSettings.BringToFront();
     }
 
     private void OnPauseChanged(bool paused)

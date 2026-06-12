@@ -9,6 +9,8 @@ internal sealed class TrayIcon : IDisposable
     private readonly ToolStripMenuItem _pauseItem;
 
     public event Action? OpenSettingsRequested;
+    // TODO(フェーズ4): WPF設定画面の正式切替時にこの暫定入口を削除し OpenSettingsRequested に統合する
+    public event Action? OpenWpfSettingsRequested;
     public event Action<bool>? PauseChanged;
     public event Action? ExitRequested;
 
@@ -19,6 +21,9 @@ internal sealed class TrayIcon : IDisposable
         var settingsItem = new ToolStripMenuItem("設定(&S)...");
         settingsItem.Click += (_, _) => OpenSettingsRequested?.Invoke();
 
+        var wpfSettingsItem = new ToolStripMenuItem("設定 (WPF preview)(&W)...");
+        wpfSettingsItem.Click += (_, _) => OpenWpfSettingsRequested?.Invoke();
+
         _pauseItem = new ToolStripMenuItem("一時停止(&P)") { CheckOnClick = true };
         _pauseItem.CheckedChanged += (_, _) => PauseChanged?.Invoke(_pauseItem.Checked);
 
@@ -26,6 +31,7 @@ internal sealed class TrayIcon : IDisposable
         exitItem.Click += (_, _) => ExitRequested?.Invoke();
 
         menu.Items.Add(settingsItem);
+        menu.Items.Add(wpfSettingsItem);
         menu.Items.Add(_pauseItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);

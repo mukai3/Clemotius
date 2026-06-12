@@ -1,0 +1,11 @@
+<Page
+    x:Class="Clemoutis.SettingsUi.Pages.WheelPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="ホイール">
+    <TextBlock
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Opacity="0.6"
+        Text="ホイール (フェーズ2で実装)" />
+</Page>

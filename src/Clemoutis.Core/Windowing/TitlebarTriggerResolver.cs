@@ -25,6 +25,25 @@ public enum TitlebarHitArea
 /// </summary>
 public static class TitlebarTriggerResolver
 {
+    /// <summary>
+    /// ヒットテスト前の事前判定: このボタン＋修飾キーで成立し得るスロットが
+    /// 1つでも設定されているか。false ならヒットテスト（クロスプロセスの
+    /// WM_NCHITTEST 送信）自体を省略でき、クリックへの遅延を避けられる。
+    /// </summary>
+    public static bool MayMatch(TitlebarSettings settings, TitlebarButton button, bool shift, bool ctrl)
+        => button switch
+        {
+            TitlebarButton.Left =>
+                (shift && !ctrl && WindowActionParser.Parse(settings.ShiftClick) is not null)
+                || (ctrl && !shift && WindowActionParser.Parse(settings.CtrlClick) is not null),
+            TitlebarButton.Right =>
+                WindowActionParser.Parse(settings.RightClick) is not null
+                || WindowActionParser.Parse(settings.MinButtonRightClick) is not null
+                || WindowActionParser.Parse(settings.CloseButtonRightClick) is not null,
+            TitlebarButton.Middle => WindowActionParser.Parse(settings.MiddleClick) is not null,
+            _ => false,
+        };
+
     /// <summary>該当するアクション。割り当てなし・対象外の組み合わせは null。</summary>
     public static WindowAction? Resolve(
         TitlebarSettings settings, TitlebarButton button, bool shift, bool ctrl, TitlebarHitArea area)

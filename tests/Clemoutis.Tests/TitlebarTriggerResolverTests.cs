@@ -85,6 +85,50 @@ public class TitlebarTriggerResolverTests
         Assert.Null(WindowActionParser.Parse(value));
     }
 
+    // ── MayMatch（ヒットテスト前の事前判定） ──
+
+    [Fact]
+    public void MayMatch_AllSlotsNone_IsFalseForEveryButton()
+    {
+        var defaults = new TitlebarSettings(); // 全スロット none
+        Assert.False(TitlebarTriggerResolver.MayMatch(defaults, TitlebarButton.Left, shift: true, ctrl: false));
+        Assert.False(TitlebarTriggerResolver.MayMatch(defaults, TitlebarButton.Right, shift: false, ctrl: false));
+        Assert.False(TitlebarTriggerResolver.MayMatch(defaults, TitlebarButton.Middle, shift: false, ctrl: false));
+    }
+
+    [Fact]
+    public void MayMatch_Left_RequiresMatchingModifier()
+    {
+        var s = new TitlebarSettings { CtrlClick = "openExeFolder" };
+        Assert.True(TitlebarTriggerResolver.MayMatch(s, TitlebarButton.Left, shift: false, ctrl: true));
+        // 修飾キーなし／不一致の左クリックはヒットテスト不要
+        Assert.False(TitlebarTriggerResolver.MayMatch(s, TitlebarButton.Left, shift: false, ctrl: false));
+        Assert.False(TitlebarTriggerResolver.MayMatch(s, TitlebarButton.Left, shift: true, ctrl: false));
+        // Shift+Ctrl 同時押しは対象外（Resolve と同じ規則）
+        Assert.False(TitlebarTriggerResolver.MayMatch(s, TitlebarButton.Left, shift: true, ctrl: true));
+    }
+
+    [Fact]
+    public void MayMatch_Right_TrueIfAnyRightSlotConfigured()
+    {
+        Assert.True(TitlebarTriggerResolver.MayMatch(
+            new TitlebarSettings { MinButtonRightClick = "windowShade" }, TitlebarButton.Right, false, false));
+        Assert.True(TitlebarTriggerResolver.MayMatch(
+            new TitlebarSettings { RightClick = "alwaysOnTop" }, TitlebarButton.Right, false, false));
+        // 右系スロットが全て none なら、左用スロットが設定されていても右はヒットテスト不要
+        Assert.False(TitlebarTriggerResolver.MayMatch(
+            new TitlebarSettings { CtrlClick = "openExeFolder" }, TitlebarButton.Right, false, false));
+    }
+
+    [Fact]
+    public void MayMatch_Middle_FollowsMiddleSlot()
+    {
+        Assert.True(TitlebarTriggerResolver.MayMatch(
+            new TitlebarSettings { MiddleClick = "translucent" }, TitlebarButton.Middle, false, false));
+        Assert.False(TitlebarTriggerResolver.MayMatch(
+            new TitlebarSettings { RightClick = "alwaysOnTop" }, TitlebarButton.Middle, false, false));
+    }
+
     [Fact]
     public void TitlebarSettings_RoundTripsThroughJson()
     {

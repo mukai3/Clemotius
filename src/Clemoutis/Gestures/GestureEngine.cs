@@ -198,7 +198,12 @@ internal sealed class GestureEngine
         if (action is not null)
             ExecuteAsync(action, TargetWindowResolver.Resolve(sx, sy));
         if (replay)
-            ReplayRightClick();
+        {
+            // フックコールバック内から SendInput すると、注入イベントが自分の
+            // LLフック（このスレッド）を通れず約300ms（LLフックタイムアウト）
+            // 待たされ、コンテキストメニュー表示が遅延する。別スレッドで再生する。
+            Task.Run(ReplayRightClick);
+        }
         GestureEnded?.Invoke();
         return true;
     }

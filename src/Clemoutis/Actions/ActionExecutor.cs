@@ -38,43 +38,67 @@ internal sealed class ActionExecutor
         InputNative.SendMessageW(targetWindow, InputNative.WM_APPCOMMAND, targetWindow, lParam);
     }
 
+    // SendKey は Task.Run から並行に呼ばれ得る（高速なホイールジェスチャ等）。
+    // アタッチ/デタッチはキュー共有のキー状態をリセットするため、並行実行すると
+    // 他方の修飾キー押下が消えて主キーだけ届くことがある。直列化して防ぐ。
+    private static readonly object SendKeyGate = new();
+
     private static void SendKey(KeyStroke stroke, nint targetWindow)
     {
-        // 対象ウィンドウのスレッドに入力をアタッチしてフォーカスを確実化する
+        lock (SendKeyGate)
+            SendKeyCore(stroke, targetWindow);
+    }
+
+    private static void SendKeyCore(KeyStroke stroke, nint targetWindow)
+    {
+        if (targetWindow != 0)
+        {
+            BringToForeground(targetWindow);
+            WaitForForeground(targetWindow);
+        }
+
+        // 注入はどのスレッドとも結合していない状態で行う。AttachThreadInput の
+        // 結合/解除は共有キューのキー状態をリセットするため、対象スレッドと
+        // 結合したまま注入すると、処理前のリセットで修飾キーだけが欠落する
+        // （Ctrl+T が T になる）。
+        var inputs = BuildKeyInputs(stroke);
+        InputNative.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<InputNative.INPUT>());
+    }
+
+    /// <summary>
+    /// 対象を前面化する。バックグラウンドプロセスの SetForegroundWindow は
+    /// 通常拒否されるため、「現在の前面ウィンドウのスレッド」と一時的に結合して
+    /// 前面化権限を得る。結合相手は対象ではなく旧前面側なので、結合/解除に伴う
+    /// キー状態リセットは対象のキューに影響しない。
+    /// </summary>
+    private static void BringToForeground(nint target)
+    {
+        nint fg = InputNative.GetForegroundWindow();
+        if (fg == target)
+            return; // 既に前面
+
         uint thisThread = InputNative.GetCurrentThreadId();
-        uint targetThread = targetWindow != 0
-            ? InputNative.GetWindowThreadProcessId(targetWindow, out _)
-            : 0;
-
-        bool attached = false;
-        if (targetThread != 0 && targetThread != thisThread)
-            attached = InputNative.AttachThreadInput(thisThread, targetThread, true);
-
+        uint fgThread = fg != 0 ? InputNative.GetWindowThreadProcessId(fg, out _) : 0;
+        bool attached = fgThread != 0 && fgThread != thisThread
+            && InputNative.AttachThreadInput(thisThread, fgThread, true);
         try
         {
-            if (targetWindow != 0)
-            {
-                InputNative.SetForegroundWindow(targetWindow);
-                WaitForForeground(targetWindow);
-            }
-
-            var inputs = BuildKeyInputs(stroke);
-            InputNative.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<InputNative.INPUT>());
+            InputNative.SetForegroundWindow(target);
         }
         finally
         {
             if (attached)
-                InputNative.AttachThreadInput(thisThread, targetThread, false);
+                InputNative.AttachThreadInput(thisThread, fgThread, false);
         }
     }
 
     /// <summary>
-    /// 対象が前面化するのを短時間待つ。前面化前に SendInput すると非アクティブ窓への
-    /// キーが落ちることがあるため（最大 ~50ms、体感遅延なし）。
+    /// 対象が前面化するのを短時間待つ。前面化前に SendInput すると修飾キーと主キーが
+    /// 別ウィンドウへ割れて届くことがあるため（最大 ~100ms、体感遅延なし）。
     /// </summary>
     private static void WaitForForeground(nint target)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 20; i++)
         {
             if (InputNative.GetForegroundWindow() == target)
                 return;

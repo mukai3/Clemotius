@@ -19,6 +19,7 @@ internal static class InputNative
     // 自分が注入したイベントの目印（フックの dwExtraInfo と照合する）
     public const nuint ClemoutisSignature = 0x0C1E_0001;
 
+    public const uint WM_NULL = 0x0000;
     public const uint WM_APPCOMMAND = 0x0319;
     public const uint WM_CLOSE = 0x0010;
     public const uint WM_NCHITTEST = 0x0084;
@@ -137,6 +138,13 @@ internal static class InputNative
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern nint SendMessageW(nint hWnd, uint msg, nint wParam, nint lParam);
+
+    public const uint SMTO_ABORTIFHUNG = 0x0002;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint SendMessageTimeoutW(
+        nint hWnd, uint msg, nint wParam, nint lParam,
+        uint fuFlags, uint uTimeout, out nint lpdwResult);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

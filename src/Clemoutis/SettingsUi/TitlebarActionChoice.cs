@@ -1,5 +1,3 @@
-using Clemoutis.Settings;
-
 namespace Clemoutis.SettingsUi;
 
 /// <summary>タイトルバーアクションの選択肢カタログ（値は WindowActionParser の設定文字列）。</summary>

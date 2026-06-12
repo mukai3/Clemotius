@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using Clemoutis.Core.Actions;
 using Clemoutis.Core.Config;
 using Clemoutis.Core.Gestures;
-using Clemoutis.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Clemoutis.SettingsUi;

@@ -1,4 +1,4 @@
-namespace Clemoutis.Settings;
+namespace Clemoutis.SettingsUi;
 
 /// <summary>
 /// スクロール挙動の選択肢カタログ。動的解析で確定したコード値（垂直系=50..57 /

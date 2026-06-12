@@ -1,6 +1,5 @@
 using System.Windows.Threading;
 using Clemoutis.Core.Config;
-using Clemoutis.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Clemoutis.SettingsUi;

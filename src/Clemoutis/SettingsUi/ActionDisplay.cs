@@ -1,6 +1,6 @@
 using Clemoutis.Core.Actions;
 
-namespace Clemoutis.Settings;
+namespace Clemoutis.SettingsUi;
 
 /// <summary>設定画面でのアクション表示・編集用のヘルパー。</summary>
 internal static class ActionDisplay

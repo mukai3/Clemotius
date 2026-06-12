@@ -1,4 +1,3 @@
-using Clemoutis.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Clemoutis.SettingsUi;

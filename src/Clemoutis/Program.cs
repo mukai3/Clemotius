@@ -113,7 +113,6 @@ internal sealed class AppContext : ApplicationContext
 
         _tray = new TrayIcon();
         _tray.OpenSettingsRequested += OnOpenSettings;
-        _tray.OpenWpfSettingsRequested += OnOpenWpfSettings;
         _tray.PauseChanged += OnPauseChanged;
         _tray.ExitRequested += OnExit;
 
@@ -137,18 +136,6 @@ internal sealed class AppContext : ApplicationContext
         _trail.ApplySettings(cfg.Gesture);
     }
 
-    // メインウィンドウを持たない常駐アプリのため、設定画面を確実に前面化する
-    private static void BringToFront(Form form)
-    {
-        if (form.WindowState == FormWindowState.Minimized)
-            form.WindowState = FormWindowState.Normal;
-        form.Activate();
-        bool top = form.TopMost;
-        form.TopMost = true;
-        form.TopMost = top;
-        form.BringToFront();
-    }
-
     // フックスレッドからの呼び出しを UI スレッドへ載せる（隠しコントロール経由）
     private void RunOnUi(Action action)
     {
@@ -164,7 +151,7 @@ internal sealed class AppContext : ApplicationContext
             'U' => '↑', 'D' => '↓', 'L' => '←', 'R' => '→', _ => c,
         }).ToArray();
         string s = new(arrows);
-        return action is null ? s : $"{s}  {Settings.ActionDisplay.ShortLabel(action)}";
+        return action is null ? s : $"{s}  {SettingsUi.ActionDisplay.ShortLabel(action)}";
     }
 
     private void OnConfigCorrupted(string backupPath)
@@ -172,26 +159,9 @@ internal sealed class AppContext : ApplicationContext
         _tray.ShowInfo($"設定ファイルが壊れていたため既定設定で起動しました。\n退避先: {backupPath}");
     }
 
-    private Settings.SettingsForm? _settingsForm;
-
-    private void OnOpenSettings()
-    {
-        if (_settingsForm is { IsDisposed: false })
-        {
-            BringToFront(_settingsForm);
-            return;
-        }
-        _settingsForm = new Settings.SettingsForm(_configStore.Current);
-        _settingsForm.Applied += cfg => _configStore.Save(cfg);
-        _settingsForm.FormClosed += (_, _) => _settingsForm = null;
-        _settingsForm.Show();
-        BringToFront(_settingsForm);
-    }
-
     private SettingsUi.SettingsWindow? _wpfSettings;
 
-    // TODO(フェーズ4): 正式切替時に OnOpenSettings をこの実装で置き換える
-    private void OnOpenWpfSettings()
+    private void OnOpenSettings()
     {
         if (_wpfSettings is not null)
         {

@@ -2,7 +2,7 @@ using Clemoutis.Core.Actions;
 using Clemoutis.Core.Config;
 using Clemoutis.Core.Gestures;
 
-namespace Clemoutis.Settings;
+namespace Clemoutis.SettingsUi;
 
 /// <summary>設定画面で編集するためのプロファイルの可変表現。</summary>
 internal sealed class MutableProfile

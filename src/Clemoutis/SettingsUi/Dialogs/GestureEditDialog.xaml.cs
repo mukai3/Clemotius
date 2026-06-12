@@ -1,7 +1,6 @@
 using System.Windows;
 using Clemoutis.Core.Actions;
 using Clemoutis.Core.Gestures;
-using Clemoutis.Settings;
 
 namespace Clemoutis.SettingsUi.Dialogs;
 

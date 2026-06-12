@@ -13,12 +13,13 @@ internal enum ScrollBarHit
 }
 
 /// <summary>
-/// カーソル直下がスクロールバーかどうか、およびその向きを判定する。
-/// オリジナルが区別する2種をカバーする:
-///   - 単独スクロールバー（独立した "ScrollBar" コントロール）: クラス名＋スタイルで判定
-///   - 標準スクロールバー（ウィンドウ非クライアントの WS_HSCROLL/WS_VSCROLL）: WM_NCHITTEST で判定
-/// ブラウザ等のカスタム描画スクロールバー（実 Win32 スクロールバーでない）は検出できない。
-/// より厳密な判定は MSAA で（設計の RE 課題）。
+/// カーソル直下がスクロールバーかどうか、およびその向きを判定する。4段構え:
+///   1. 単独スクロールバー（独立した "ScrollBar" コントロール）: クラス名＋スタイルで判定
+///   2. 標準スクロールバー（ウィンドウ非クライアントの WS_HSCROLL/WS_VSCROLL）: WM_NCHITTEST で判定
+///   3. カスタム描画スクロールバー: MSAA の ROLE_SYSTEM_SCROLLBAR
+///   4. Chromium 系: MSAA は a11y 既定無効でスタブしか返さないため、UIA の
+///      ScrollPattern 要素＋端帯ジオメトリ（<see cref="ScrollBarBand"/>）で判定。
+///      スクロール自体は WM_VSCROLL/WM_HSCROLL が Chromium にも効くことを実測確認済み。
 /// </summary>
 internal static class ScrollBarDetector
 {
@@ -55,19 +56,17 @@ internal static class ScrollBarDetector
                 return (ScrollBarHit.Vertical, hwnd);
         }
 
-        // 3) カスタム描画スクロールバー: MSAA で役割を問い合わせる
-        //    （オリジナルは WM_GETOBJECT/ObjectFromLresult ＋ AccessibleChildren で同等の判定。
-        //      プロセス外からは AccessibleObjectFromPoint が同じ仕組みの公式 API）
-        return DetectByMsaa(x, y);
+        // 3)+4) カスタム描画スクロールバー: MSAA → UIA の順で問い合わせる
+        return DetectCustom(x, y, hwnd);
     }
 
     private const int ROLE_SYSTEM_SCROLLBAR = 3;
 
-    // MSAA はプロセス間呼び出しで数 ms かかりうるため、連続ホイール中は
+    // MSAA/UIA はプロセス間呼び出しで数 ms かかりうるため、連続ホイール中は
     // 近傍・短時間の結果を再利用してラグを防ぐ
     private static (int x, int y, ScrollBarHit hit, nint target, uint tick) _msaaCache;
 
-    private static (ScrollBarHit hit, nint target) DetectByMsaa(int x, int y)
+    private static (ScrollBarHit hit, nint target) DetectCustom(int x, int y, nint hwnd)
     {
         var c = _msaaCache;
         uint now = (uint)Environment.TickCount;
@@ -75,8 +74,50 @@ internal static class ScrollBarDetector
             return (c.hit, c.target);
 
         var result = DetectByMsaaCore(x, y);
+        if (result.hit == ScrollBarHit.None)
+            result = DetectByUia(x, y, hwnd);
         _msaaCache = (x, y, result.hit, result.target, now);
         return result;
+    }
+
+    // ── 4) UIA: ScrollPattern を持つ要素＋端帯ジオメトリ ──
+    // Chromium はスクロールバーを UIA の ScrollBar 要素として公開しないため、
+    // 「スクロール可能要素の右端/下端のスクロールバー幅の帯」をスクロールバー扱いする。
+    private static (ScrollBarHit hit, nint target) DetectByUia(int x, int y, nint hwnd)
+    {
+        try
+        {
+            var el = System.Windows.Automation.AutomationElement.FromPoint(
+                new System.Windows.Point(x, y));
+            for (int depth = 0; el is not null && depth < 8; depth++)
+            {
+                if (el.TryGetCurrentPattern(
+                        System.Windows.Automation.ScrollPattern.Pattern, out object p))
+                {
+                    var pattern = (System.Windows.Automation.ScrollPattern)p;
+                    var rect = el.Current.BoundingRectangle;
+                    var hit = Clemoutis.Core.Scroll.ScrollBarBand.Hit(
+                        x, y,
+                        (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height,
+                        pattern.Current.VerticallyScrollable,
+                        pattern.Current.HorizontallyScrollable,
+                        InputNative.GetSystemMetrics(InputNative.SM_CXVSCROLL),
+                        InputNative.GetSystemMetrics(InputNative.SM_CYHSCROLL));
+                    return hit switch
+                    {
+                        Clemoutis.Core.Scroll.BandHit.Vertical => (ScrollBarHit.Vertical, hwnd),
+                        Clemoutis.Core.Scroll.BandHit.Horizontal => (ScrollBarHit.Horizontal, hwnd),
+                        // 最初に見つかったスクロール要素で判定を終える（外側へは波及させない）
+                        _ => (ScrollBarHit.None, 0),
+                    };
+                }
+                el = System.Windows.Automation.TreeWalker.ControlViewWalker.GetParent(el);
+            }
+        }
+        catch (System.Windows.Automation.ElementNotAvailableException) { }
+        catch (COMException) { }
+        catch (InvalidOperationException) { }
+        return (ScrollBarHit.None, 0);
     }
 
     private static (ScrollBarHit hit, nint target) DetectByMsaaCore(int x, int y)

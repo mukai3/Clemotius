@@ -70,6 +70,8 @@ internal static class InputNative
 
     [DllImport("user32.dll")]
     public static extern int GetSystemMetrics(int nIndex);
+    public const int SM_CXVSCROLL = 2;
+    public const int SM_CYHSCROLL = 3;
     public const int SM_CYCAPTION = 4;
     public const int SM_CYSIZEFRAME = 33;
 

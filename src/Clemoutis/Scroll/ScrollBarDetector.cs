@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using Accessibility;
 using Clemoutis.Interop;
 
 namespace Clemoutis.Scroll;
@@ -45,13 +47,92 @@ internal static class ScrollBarDetector
         // 2) 非クライアントの標準スクロールバー: ウィンドウにヒットテストを問い合わせる
         nint lParam = unchecked((nint)((y << 16) | (x & 0xFFFF)));
         nint hit = InputNative.SendMessageW(hwnd, InputNative.WM_NCHITTEST, 0, lParam);
-        return (int)hit switch
+        switch ((int)hit)
         {
-            InputNative.HTHSCROLL => (ScrollBarHit.Horizontal, hwnd),
-            InputNative.HTVSCROLL => (ScrollBarHit.Vertical, hwnd),
-            _ => (ScrollBarHit.None, 0),
-        };
+            case InputNative.HTHSCROLL:
+                return (ScrollBarHit.Horizontal, hwnd);
+            case InputNative.HTVSCROLL:
+                return (ScrollBarHit.Vertical, hwnd);
+        }
+
+        // 3) カスタム描画スクロールバー: MSAA で役割を問い合わせる
+        //    （オリジナルは WM_GETOBJECT/ObjectFromLresult ＋ AccessibleChildren で同等の判定。
+        //      プロセス外からは AccessibleObjectFromPoint が同じ仕組みの公式 API）
+        return DetectByMsaa(x, y);
     }
+
+    private const int ROLE_SYSTEM_SCROLLBAR = 3;
+
+    // MSAA はプロセス間呼び出しで数 ms かかりうるため、連続ホイール中は
+    // 近傍・短時間の結果を再利用してラグを防ぐ
+    private static (int x, int y, ScrollBarHit hit, nint target, uint tick) _msaaCache;
+
+    private static (ScrollBarHit hit, nint target) DetectByMsaa(int x, int y)
+    {
+        var c = _msaaCache;
+        uint now = (uint)Environment.TickCount;
+        if (now - c.tick < 250 && Math.Abs(x - c.x) < 8 && Math.Abs(y - c.y) < 8)
+            return (c.hit, c.target);
+
+        var result = DetectByMsaaCore(x, y);
+        _msaaCache = (x, y, result.hit, result.target, now);
+        return result;
+    }
+
+    private static (ScrollBarHit hit, nint target) DetectByMsaaCore(int x, int y)
+    {
+        try
+        {
+            if (AccessibleObjectFromPoint(new POINTSTRUCT { x = x, y = y },
+                    out IAccessible? acc, out object child) != 0 || acc is null)
+            {
+                return (ScrollBarHit.None, 0);
+            }
+
+            object childId = child ?? 0;
+            // ヒットした要素がスクロールバーの子（ボタン/つまみ）のこともあるため親を少し遡る
+            for (int depth = 0; depth < 3 && acc is not null; depth++)
+            {
+                if (RoleOf(acc, childId) == ROLE_SYSTEM_SCROLLBAR)
+                {
+                    acc.accLocation(out _, out _, out int w, out int h, childId);
+                    if (w <= 0 || h <= 0)
+                        return (ScrollBarHit.None, 0);
+                    if (WindowFromAccessibleObject(acc, out nint hwnd) != 0 || hwnd == 0)
+                        return (ScrollBarHit.None, 0);
+                    return (w >= h ? ScrollBarHit.Horizontal : ScrollBarHit.Vertical, hwnd);
+                }
+                acc = acc.accParent as IAccessible;
+                childId = 0; // 親へ遡ったら自身を指す
+            }
+        }
+        catch (COMException) { }
+        catch (InvalidCastException) { }
+        catch (ArgumentException) { }
+        return (ScrollBarHit.None, 0);
+    }
+
+    private static int RoleOf(IAccessible acc, object childId)
+    {
+        try
+        {
+            return acc.get_accRole(childId) is int role ? role : 0;
+        }
+        catch (COMException)
+        {
+            return 0;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINTSTRUCT { public int x, y; }
+
+    [DllImport("oleacc.dll")]
+    private static extern int AccessibleObjectFromPoint(
+        POINTSTRUCT pt, out IAccessible? ppacc, out object pvarChild);
+
+    [DllImport("oleacc.dll")]
+    private static extern int WindowFromAccessibleObject(IAccessible pacc, out nint phwnd);
 
     private static string GetClassName(nint hwnd)
     {

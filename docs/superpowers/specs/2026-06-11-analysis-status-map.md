@@ -37,6 +37,14 @@
 これで標準スクロールバーで確実に動き、解読済みコード値の「N行/N列」量制御も実現。
 高速スクロール(コード末尾6)は暫定で多めの行数、量未確定。
 
+### カスタム描画スクロールバーの検出（OLEACC インポートの精査）
+オリジナルの MSAA 使用関数を特定: `Kazahook.dll` は **`ObjectFromLresult`（WM_GETOBJECT 経由の
+IAccessible 取得）＋ `AccessibleChildren` ＋ `AccessibleObjectFromWindow`**。フック DLL として
+プロセス内から MSAA ツリーを歩き、スクロールバー要素を判定している。
+→ プロセス外の Clemoutis では同じ仕組みの公式 API **`AccessibleObjectFromPoint`** で置換。
+役割 `ROLE_SYSTEM_SCROLLBAR`(3) を親方向に最大3階層探索、向きは accLocation の縦横比で判定、
+送出先は `WindowFromAccessibleObject`。プロセス間呼び出しのコスト対策に近傍250msの結果キャッシュ。
+
 ## 動的解析で確定（2026-06-11、ユーザー提供 ini の差分より）
 
 ユーザーが appdefault / mydefault / modscroll の3 ini を提供。modscroll は appdefault から

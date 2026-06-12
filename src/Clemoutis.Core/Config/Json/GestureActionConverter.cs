@@ -25,7 +25,10 @@ public sealed class GestureActionConverter : JsonConverter<GestureAction>
             case "key":
                 string keys = root.GetProperty("keys").GetString()
                     ?? throw new JsonException("key アクションに 'keys' がありません。");
-                return new KeyAction(KeyStrokeParser.Parse(keys));
+                string? label = root.TryGetProperty("label", out var labelProp)
+                    ? labelProp.GetString()
+                    : null;
+                return new KeyAction(KeyStrokeParser.Parse(keys), label);
 
             case "appcommand":
                 string cmd = root.GetProperty("command").GetString()
@@ -50,6 +53,8 @@ public sealed class GestureActionConverter : JsonConverter<GestureAction>
             case KeyAction key:
                 writer.WriteString("type", "key");
                 writer.WriteString("keys", key.Stroke.ToString());
+                if (key.Label is not null)
+                    writer.WriteString("label", key.Label);
                 break;
             case AppCommandAction cmd:
                 writer.WriteString("type", "appcommand");

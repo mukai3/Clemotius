@@ -53,7 +53,10 @@ internal sealed class ActionExecutor
         try
         {
             if (targetWindow != 0)
+            {
                 InputNative.SetForegroundWindow(targetWindow);
+                WaitForForeground(targetWindow);
+            }
 
             var inputs = BuildKeyInputs(stroke);
             InputNative.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<InputNative.INPUT>());
@@ -62,6 +65,20 @@ internal sealed class ActionExecutor
         {
             if (attached)
                 InputNative.AttachThreadInput(thisThread, targetThread, false);
+        }
+    }
+
+    /// <summary>
+    /// 対象が前面化するのを短時間待つ。前面化前に SendInput すると非アクティブ窓への
+    /// キーが落ちることがあるため（最大 ~50ms、体感遅延なし）。
+    /// </summary>
+    private static void WaitForForeground(nint target)
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            if (InputNative.GetForegroundWindow() == target)
+                return;
+            Thread.Sleep(5);
         }
     }
 

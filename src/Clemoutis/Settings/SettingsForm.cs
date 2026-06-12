@@ -205,12 +205,7 @@ internal sealed class SettingsForm : Form
         _onHorizontalScrollbar.SetBounds(250, 60, 200, 23);
         group.Controls.AddRange(new Control[] { _onVerticalScrollbar, _onHorizontalScrollbar });
 
-        var note = new Label
-        {
-            Text = "※ カーソル下を常にスクロール・前面化・フォーカス合わせ・スクロール加速は本バージョンでは未実装です。",
-            Left = 12, Top = 122, Width = 480, Height = 40,
-        };
-        page.Controls.AddRange(new Control[] { group, note });
+        page.Controls.Add(group);
         return page;
     }
 

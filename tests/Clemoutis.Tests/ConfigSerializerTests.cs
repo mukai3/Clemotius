@@ -38,6 +38,24 @@ public class ConfigSerializerTests
     }
 
     [Fact]
+    public void KeyActionWithLabel_RoundTrips()
+    {
+        var json = ConfigSerializer.Serialize(WithGesture(
+            new GestureBinding("DR", new KeyAction(KeyStrokeParser.Parse("Ctrl+T"), "Chrome: 新規タブを開く (Ctrl+T)"))));
+        var key = Assert.IsType<KeyAction>(FirstAction(ConfigSerializer.Deserialize(json)));
+        Assert.Equal("Chrome: 新規タブを開く (Ctrl+T)", key.Label);
+        Assert.Equal("Ctrl+T", key.Stroke.ToString());
+    }
+
+    [Fact]
+    public void KeyActionWithoutLabel_OmitsLabelInJson()
+    {
+        var json = ConfigSerializer.Serialize(WithGesture(
+            new GestureBinding("DR", new KeyAction(KeyStrokeParser.Parse("Ctrl+W")))));
+        Assert.DoesNotContain("\"label\"", json);
+    }
+
+    [Fact]
     public void CloseAction_RoundTrips()
     {
         var json = ConfigSerializer.Serialize(WithGesture(

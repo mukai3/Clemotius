@@ -126,6 +126,19 @@ internal sealed class GestureEditDialog : Form
         _type.SelectedItem = ActionDisplay.TypeNameOf(action);
         switch (action)
         {
+            case KeyAction { Label: { } label } k:
+                // プリセット由来: 名前一致するプリセットを選択（カタログから消えていたらキー送信扱い）
+                var match = PresetCommands.All.FirstOrDefault(p => p.Display == label);
+                if (match is not null)
+                {
+                    _preset.SelectedItem = match;
+                }
+                else
+                {
+                    _type.SelectedItem = ActionDisplay.TypeKey;
+                    _keys.Stroke = k.Stroke;
+                }
+                break;
             case KeyAction k:
                 _keys.Stroke = k.Stroke;
                 break;
@@ -193,7 +206,8 @@ internal sealed class GestureEditDialog : Form
                 Warn("プリセットを選択してください。");
                 return false;
             }
-            action = new KeyAction(preset.Stroke); // プリセットはキー送信に展開
+            // プリセットはキー送信に展開し、表示用にプリセット名を保持する
+            action = new KeyAction(preset.Stroke, preset.Display);
         }
         else if (type == ActionDisplay.TypeAppCommand)
         {

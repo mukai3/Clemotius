@@ -15,9 +15,10 @@ internal static class ActionDisplay
     // プリセットは入力補助で、保存時はキー送信(KeyAction)に展開される。
     public static string[] TypeNames => new[] { TypeKey, TypePreset, TypeAppCommand };
 
-    /// <summary>一覧表示用の説明文。</summary>
+    /// <summary>一覧表示用の説明文。プリセット由来はプリセット名を表示する。</summary>
     public static string Describe(GestureAction action) => action switch
     {
+        KeyAction { Label: { } label } => label,
         KeyAction k => $"{TypeKey}: {k.Stroke}",
         AppCommandAction c => $"{TypeAppCommand}: {c.Command}",
         CloseAction => TypeClose,
@@ -26,15 +27,17 @@ internal static class ActionDisplay
 
     public static string TypeNameOf(GestureAction action) => action switch
     {
+        KeyAction { Label: not null } => TypePreset,
         KeyAction => TypeKey,
         AppCommandAction => TypeAppCommand,
         CloseAction => TypeClose,
         _ => TypeKey,
     };
 
-    /// <summary>画面上のコマンド表示用の簡潔なラベル（例: "Ctrl+W" / "Close"）。</summary>
+    /// <summary>画面上のコマンド表示用の簡潔なラベル（例: "Ctrl+W" / "Close" / プリセット名）。</summary>
     public static string ShortLabel(GestureAction action) => action switch
     {
+        KeyAction { Label: { } label } => label,
         KeyAction k => k.Stroke.ToString(),
         AppCommandAction c => c.Command.ToString(),
         CloseAction => "Close",

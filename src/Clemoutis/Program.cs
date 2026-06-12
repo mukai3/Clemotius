@@ -4,6 +4,7 @@ using Clemoutis.Gestures;
 using Clemoutis.Hooks;
 using Clemoutis.Scroll;
 using Clemoutis.Tray;
+using Clemoutis.Windowing;
 
 namespace Clemoutis;
 
@@ -48,6 +49,7 @@ internal sealed class AppContext : ApplicationContext
     private readonly ConfigStore _configStore;
     private readonly ActiveConfigProvider _configProvider;
     private readonly ScrollEnhancer _scroll;
+    private readonly TitlebarActionHandler _titlebar;
     private readonly GestureWpfOverlay _trail = new();
     private readonly GestureCommandOverlay _command = new();
     private volatile bool _drawTrail;
@@ -66,6 +68,9 @@ internal sealed class AppContext : ApplicationContext
         _configStore = new ConfigStore(_marshal);
         _configProvider = new ActiveConfigProvider(_configStore.Current);
         _scroll = new ScrollEnhancer(_modifiers, _configStore.Current.Scroll);
+        _titlebar = new TitlebarActionHandler(
+            _modifiers, new WindowActionExecutor(), _configStore.Current.Titlebar);
+        _titlebar.UpdateSettings(_configStore.Current.Titlebar); // 不透明度を反映
         _configStore.Changed += OnConfigChanged;
         _configStore.Corrupted += OnConfigCorrupted;
 
@@ -93,7 +98,7 @@ internal sealed class AppContext : ApplicationContext
         });
         gesture.GestureEnded += () => RunOnUi(() => { _trail.End(); _command.HideText(); });
 
-        var router = new InputRouter(_modifiers, gesture, _scroll);
+        var router = new InputRouter(_modifiers, gesture, _scroll, _titlebar);
         _mouseHook.Handler = router.OnMouse;
         _keyboardHook.Handler = router.OnKeyboard;
         _mouseHook.Install();
@@ -122,6 +127,7 @@ internal sealed class AppContext : ApplicationContext
     {
         _configProvider.Update(cfg);
         _scroll.UpdateSettings(cfg.Scroll);
+        _titlebar.UpdateSettings(cfg.Titlebar);
         _drawTrail = cfg.Gesture.DrawStroke;
         _commandMode = cfg.Gesture.DrawingType == 1;
         _trail.ApplySettings(cfg.Gesture);

@@ -30,6 +30,10 @@ internal sealed class SettingsForm : Form
     private readonly ComboBox _onVerticalScrollbar = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ComboBox _onHorizontalScrollbar = new() { DropDownStyle = ComboBoxStyle.DropDownList };
 
+    // --- ウィンドウ タブ（タイトルバーアクション） ---
+    private readonly Dictionary<string, ComboBox> _titlebarCombos = new();
+    private readonly NumericUpDown _windowOpacity = new() { Minimum = 10, Maximum = 90 };
+
     // --- 一般・詳細 タブ ---
     private readonly CheckBox _showTrayIcon = new() { Text = "タスクトレイにアイコンを表示する" };
     private readonly CheckBox _showBalloonTip = new() { Text = "バルーン通知を表示する" };
@@ -65,6 +69,7 @@ internal sealed class SettingsForm : Form
         tabs.TabPages.Add(BuildGestureTab());
         tabs.TabPages.Add(BuildScrollTab());
         tabs.TabPages.Add(BuildWheelTab());
+        tabs.TabPages.Add(BuildWindowTab());
         tabs.TabPages.Add(BuildGeneralTab());
 
         var ok = new Button { Text = "OK", Width = 90, Left = 230, Top = 477 };
@@ -209,6 +214,52 @@ internal sealed class SettingsForm : Form
         return page;
     }
 
+    // ---------------------------------------------------------------- ウィンドウ
+    private static readonly (string Display, string Value)[] WindowActionChoices =
+    {
+        ("なし", "none"),
+        ("常に最前面", "alwaysOnTop"),
+        ("ウィンドウシェード", "windowShade"),
+        ("実行ファイルのフォルダを開く", "openExeFolder"),
+        ("半透明化", "translucent"),
+    };
+
+    private TabPage BuildWindowTab()
+    {
+        var page = new TabPage("ウィンドウ");
+        var group = new GroupBox { Text = "タイトルバー アクション" };
+        group.SetBounds(12, 12, 480, 230);
+
+        var rows = new (string key, string label)[]
+        {
+            ("ShiftClick", "タイトルバーを Shift+クリック"),
+            ("CtrlClick", "タイトルバーを Ctrl+クリック"),
+            ("RightClick", "タイトルバーを右クリック"),
+            ("MiddleClick", "タイトルバーを中央クリック"),
+            ("MinButtonRightClick", "最小化ボタンを右クリック"),
+            ("CloseButtonRightClick", "閉じるボタンを右クリック"),
+        };
+        int top = 28;
+        foreach (var (key, label) in rows)
+        {
+            group.Controls.Add(new Label { Text = label, Left = 16, Top = top + 3, Width = 200 });
+            var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+            combo.SetBounds(230, top, 220, 23);
+            _titlebarCombos[key] = combo;
+            group.Controls.Add(combo);
+            top += 32;
+        }
+
+        var opacityGroup = new GroupBox { Text = "半透明化" };
+        opacityGroup.SetBounds(12, 252, 480, 60);
+        opacityGroup.Controls.Add(new Label { Text = "不透明度 (%)", Left = 16, Top = 28, Width = 120 });
+        _windowOpacity.SetBounds(140, 25, 80, 23);
+        opacityGroup.Controls.Add(_windowOpacity);
+
+        page.Controls.AddRange(new Control[] { group, opacityGroup });
+        return page;
+    }
+
     // ---------------------------------------------------------------- 一般・詳細
     private TabPage BuildGeneralTab()
     {
@@ -268,6 +319,15 @@ internal sealed class SettingsForm : Form
         BindCombo(_onVerticalScrollbar, ScrollBehaviorChoice.VerticalBar, _original.Scroll.OnVerticalScrollbar);
         BindCombo(_onHorizontalScrollbar, ScrollBehaviorChoice.HorizontalBar, _original.Scroll.OnHorizontalScrollbar);
 
+        var tb = _original.Titlebar;
+        BindTitlebarCombo("ShiftClick", tb.ShiftClick);
+        BindTitlebarCombo("CtrlClick", tb.CtrlClick);
+        BindTitlebarCombo("RightClick", tb.RightClick);
+        BindTitlebarCombo("MiddleClick", tb.MiddleClick);
+        BindTitlebarCombo("MinButtonRightClick", tb.MinButtonRightClick);
+        BindTitlebarCombo("CloseButtonRightClick", tb.CloseButtonRightClick);
+        _windowOpacity.Value = Clamp(tb.WindowOpacity, _windowOpacity);
+
         _showTrayIcon.Checked = _original.Tray.ShowTrayIcon;
         _showBalloonTip.Checked = _original.Tray.ShowBalloonTip;
         _range.Value = Clamp(_original.Gesture.Range, _range);
@@ -284,6 +344,25 @@ internal sealed class SettingsForm : Form
 
     private static string ComboValue(ComboBox combo) =>
         combo.SelectedValue as string ?? (combo.SelectedItem as ScrollBehaviorChoice.Choice)?.Value ?? "none";
+
+    private void BindTitlebarCombo(string key, string value)
+    {
+        var combo = _titlebarCombos[key];
+        combo.DisplayMember = "Item1";
+        combo.ValueMember = "Item2";
+        combo.DataSource = WindowActionChoices
+            .Select(c => Tuple.Create(c.Display, c.Value)).ToList();
+        combo.SelectedValue = value;
+        if (combo.SelectedIndex < 0)
+            combo.SelectedIndex = 0;
+    }
+
+    private string TitlebarValue(string key)
+    {
+        var combo = _titlebarCombos[key];
+        return combo.SelectedValue as string
+            ?? (combo.SelectedItem as Tuple<string, string>)?.Item2 ?? "none";
+    }
 
     private static void BindCombo(
         ComboBox combo, IReadOnlyList<ScrollBehaviorChoice.Choice> choices, string value)
@@ -333,10 +412,22 @@ internal sealed class SettingsForm : Form
             ShowBalloonTip = _showBalloonTip.Checked,
         };
 
+        var titlebar = new TitlebarSettings
+        {
+            ShiftClick = TitlebarValue("ShiftClick"),
+            CtrlClick = TitlebarValue("CtrlClick"),
+            RightClick = TitlebarValue("RightClick"),
+            MiddleClick = TitlebarValue("MiddleClick"),
+            MinButtonRightClick = TitlebarValue("MinButtonRightClick"),
+            CloseButtonRightClick = TitlebarValue("CloseButtonRightClick"),
+            WindowOpacity = (int)_windowOpacity.Value,
+        };
+
         var config = _original with
         {
             Gesture = gesture,
             Scroll = scroll,
+            Titlebar = titlebar,
             Tray = tray,
             Profiles = _profiles.Select(p => p.ToProfile()).ToArray(),
         };

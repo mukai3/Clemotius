@@ -11,6 +11,7 @@ public sealed record ClemoutisConfig
 {
     public GestureSettings Gesture { get; init; } = new();
     public ScrollSettings Scroll { get; init; } = new();
+    public TitlebarSettings Titlebar { get; init; } = new();
     public TraySettings Tray { get; init; } = new();
     public IReadOnlyList<GestureProfile> Profiles { get; init; } = new[] { DefaultProfile() };
 

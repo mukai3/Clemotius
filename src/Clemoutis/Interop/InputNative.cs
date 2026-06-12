@@ -24,6 +24,53 @@ internal static class InputNative
     public const uint WM_NCHITTEST = 0x0084;
     public const int HTHSCROLL = 6;
     public const int HTVSCROLL = 7;
+    public const int HTCAPTION = 2;
+    public const int HTMINBUTTON = 8;
+    public const int HTCLOSE = 20;
+
+    // ── ウィンドウ操作（タイトルバーアクション） ──
+    public const int GWL_EXSTYLE = -20;
+    public const int WS_EX_TOPMOST = 0x0008;
+    public const int WS_EX_LAYERED = 0x80000;
+    public static readonly nint HWND_TOPMOST = -1;
+    public static readonly nint HWND_NOTOPMOST = -2;
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_NOACTIVATE = 0x0010;
+    public const uint LWA_ALPHA = 0x0002;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(
+        nint hWnd, nint hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    public static extern nint GetWindowLongPtrW(nint hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    public static extern nint SetWindowLongPtrW(nint hWnd, int nIndex, nint dwNewLong);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetWindowRect(nint hWnd, out RECT lpRect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
+    public const int SM_CYCAPTION = 4;
+    public const int SM_CYSIZEFRAME = 33;
 
     public const uint WM_HSCROLL = 0x0114;
     public const uint WM_VSCROLL = 0x0115;

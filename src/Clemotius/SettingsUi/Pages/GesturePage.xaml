@@ -1,0 +1,196 @@
+<Page
+    x:Class="Clemotius.SettingsUi.Pages.GesturePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="ジェスチャー">
+    <Grid Margin="24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--  プロファイルバー  -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                Text="プロファイル:" />
+            <ComboBox
+                Grid.Column="1"
+                DisplayMemberPath="DisplayName"
+                ItemsSource="{Binding Gesture.Profiles}"
+                SelectedItem="{Binding Gesture.SelectedProfile}" />
+            <ui:Button
+                Grid.Column="2"
+                Click="OnAddProfile"
+                Content="追加" />
+            <ui:Button
+                x:Name="EditProfileButton"
+                Grid.Column="4"
+                Click="OnEditProfile"
+                Content="編集" />
+            <ui:Button
+                Grid.Column="6"
+                Click="OnRemoveProfile"
+                Content="削除"
+                IsEnabled="{Binding Gesture.SelectedIsRemovable}" />
+        </Grid>
+
+        <!--  プロファイル編集フライアウト  -->
+        <Popup
+            x:Name="ProfileFlyout"
+            AllowsTransparency="True"
+            Placement="Bottom"
+            PlacementTarget="{Binding ElementName=EditProfileButton}"
+            StaysOpen="False">
+            <Border
+                Margin="8"
+                Padding="16"
+                Background="{DynamicResource ApplicationBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <Border.Effect>
+                    <DropShadowEffect
+                        BlurRadius="16"
+                        Opacity="0.4"
+                        ShadowDepth="4" />
+                </Border.Effect>
+                <StackPanel Width="260">
+                    <TextBlock
+                        Margin="0,0,0,12"
+                        FontWeight="SemiBold"
+                        Text="プロファイルの編集" />
+                    <TextBlock Margin="0,0,0,4" Opacity="0.8" Text="プロファイル名" />
+                    <TextBox
+                        x:Name="FlyoutName"
+                        Margin="0,0,0,8"
+                        TextChanged="OnFlyoutInputChanged" />
+                    <TextBlock Margin="0,0,0,4" Opacity="0.8" Text="対象プロセス (カンマ区切りで複数可)" />
+                    <TextBox
+                        x:Name="FlyoutPattern"
+                        Margin="0,0,0,8"
+                        TextChanged="OnFlyoutInputChanged" />
+                    <ui:ToggleSwitch
+                        x:Name="FlyoutEnabled"
+                        Margin="0,0,0,8"
+                        Content="ジェスチャーを有効にする" />
+                    <TextBlock
+                        x:Name="FlyoutError"
+                        Margin="0,0,0,8"
+                        Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:Button
+                            x:Name="FlyoutSave"
+                            Grid.Column="1"
+                            Appearance="Primary"
+                            Click="OnFlyoutSave"
+                            Content="保存" />
+                        <ui:Button
+                            Grid.Column="3"
+                            Click="OnFlyoutCancel"
+                            Content="キャンセル" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <!--  ジェスチャー一覧  -->
+        <ListView
+            x:Name="GestureList"
+            Grid.Row="1"
+            MouseDoubleClick="OnEditGesture"
+            ItemsSource="{Binding Gesture.Gestures}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn
+                        Width="120"
+                        DisplayMemberBinding="{Binding Arrows}"
+                        Header="ストローク" />
+                    <GridViewColumn
+                        Width="380"
+                        DisplayMemberBinding="{Binding Description}"
+                        Header="アクション" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="0,8,0,0"
+            Orientation="Horizontal">
+            <ui:Button
+                Margin="0,0,8,0"
+                Click="OnAddGesture"
+                Content="追加" />
+            <ui:Button
+                Margin="0,0,8,0"
+                Click="OnEditGesture"
+                Content="編集" />
+            <ui:Button Click="OnRemoveGesture" Content="削除" />
+        </StackPanel>
+
+        <!--  右ボタン + ホイール  -->
+        <StackPanel Grid.Row="3" Margin="0,16,0,0">
+            <TextBlock
+                Margin="0,0,0,8"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Text="右ボタン + ホイール" />
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" Text="上:" />
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Text="{Binding Gesture.WheelUpText}"
+                    TextTrimming="CharacterEllipsis" />
+                <ui:Button
+                    Grid.Column="2"
+                    Click="OnEditWheelUp"
+                    Content="変更..." />
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" Text="下:" />
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Text="{Binding Gesture.WheelDownText}"
+                    TextTrimming="CharacterEllipsis" />
+                <ui:Button
+                    Grid.Column="2"
+                    Click="OnEditWheelDown"
+                    Content="変更..." />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Page>

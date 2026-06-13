@@ -7,7 +7,7 @@
 
 ## 全体方針
 
-常駐コア（フック・トレイ・ウォッチドッグ・オーバーレイ）には一切手を入れない。新コードは `src/Clemoutis/SettingsUi/` に隔離し、`ConfigStore` との契約は現行の `Applied: Action<ClemoutisConfig>` を踏襲する。
+常駐コア（フック・トレイ・ウォッチドッグ・オーバーレイ）には一切手を入れない。新コードは `src/Clemotius/SettingsUi/` に隔離し、`ConfigStore` との契約は現行の `Applied: Action<ClemotiusConfig>` を踏襲する。
 
 ```
 フェーズ0 ── 基盤更新（net10 + NuGet + テーマ初期化）
@@ -25,7 +25,7 @@
 
 タスク:
 - [ ] 0.1 全プロジェクトの TFM を `net8.0(-windows)` → `net10.0(-windows)` に更新、`dotnet build` / `dotnet test` 確認
-- [ ] 0.2 `Clemoutis.csproj` に NuGet 追加: `WPF-UI`、`CommunityToolkit.Mvvm`
+- [ ] 0.2 `Clemotius.csproj` に NuGet 追加: `WPF-UI`、`CommunityToolkit.Mvvm`
 - [ ] 0.3 `Program.cs` の既存 `System.Windows.Application` 生成箇所で WPF-UI のテーマ辞書（`ThemesDictionary` + `ControlsDictionary`）を `Application.Resources` にマージ
 - [ ] 0.4 既存動作の回帰確認: ジェスチャー（軌跡/コマンド表示の両モード）・拡張スクロール・タイトルバーアクション・トレイ・設定画面(旧)
 
@@ -41,7 +41,7 @@
 
 タスク:
 - [ ] 1.1 `SettingsUi/SettingsWindow`: `FluentWindow` + `NavigationView`（ジェスチャー/拡張スクロール/ホイール/ウィンドウ/一般）。Mica背景・ダークモードOS追従・リサイズ可能
-- [ ] 1.2 `SettingsUi/SettingsViewModel`: `ClemoutisConfig` の編集用コピー保持、`ClemoutisConfig` 再構築ロジック、`Applied` イベント
+- [ ] 1.2 `SettingsUi/SettingsViewModel`: `ClemotiusConfig` の編集用コピー保持、`ClemotiusConfig` 再構築ロジック、`Applied` イベント
 - [ ] 1.3 300msデバウンス保存（`DispatcherTimer`）。**再構築ロジックはユニットテスト対象**
 - [ ] 1.4 デバッグ用の暫定起動口（トレイメニューに「設定(WPF preview)」を一時追加 — フェーズ4で正式切替）
 

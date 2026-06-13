@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Clemotius.Core/Clemotius.Core.csproj" />
+    <Project Path="src/Clemotius/Clemotius.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Clemotius.Tests/Clemotius.Tests.csproj" />
+  </Folder>
+</Solution>

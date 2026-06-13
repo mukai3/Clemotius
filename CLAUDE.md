@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 概要
 
-このリポジトリは「かざぐるマウス」（KazaguruMouse64）のバイナリ配布物です。ソースコードは含まれていません。
+このリポジトリは「かざぐるマウス」（KazaguruMouse64）のバイナリ配布物を参考に、.NET(C#)でリプロダクトするプロジェクトです。
 
 - **用途**: Windows 用マウス拡張ユーティリティ（マウスジェスチャー、スクロール強化など）
-- **作者**: Mitsuhal (Static Flower)
-- **ライセンス**: フリーウェア
+- **原作者**: Mitsuhal (Static Flower)
+- **ライセンス**: 個人用途(配布予定なし)
 
 ## ファイル構成
 
@@ -23,6 +23,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 注意事項
 
-- このリポジトリにはビルドシステム・ソースコードが存在しないため、コンパイルや修正は行えません。
-- 使用方法は `Kazaguru.chm` を参照してください。
-- 再配布時は `ReadMe.txt` 記載の条件を確認してください。
+- KazaguruMouse64のバイナリ解析状況マップは docs/superpowers/specs/2026-06-11-analysis-status-map.md に記載。

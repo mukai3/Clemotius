@@ -3,8 +3,11 @@ obj/
 *.user
 .vs/
 .claude/
+# ブレインストーミング用モックアップ（一時ファイル）
+.superpowers/
 
 # オリジナル「かざぐるマウス」のバイナリ（再配布条件への配慮のため追跡しない）
+KazaguruBin/
 Kazaguru.exe
 Kazaguru.chm
 Kazasub.dll

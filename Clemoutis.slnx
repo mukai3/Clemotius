@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Clemoutis.Core/Clemoutis.Core.csproj" />
-    <Project Path="src/Clemoutis/Clemoutis.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Clemoutis.Tests/Clemoutis.Tests.csproj" />
-  </Folder>
-</Solution>

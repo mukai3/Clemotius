@@ -141,6 +141,7 @@ internal sealed partial class SettingsViewModel : ObservableObject
             StrokeWidth = General.StrokeWidth,
             ValidStrokeColor = General.ValidStrokeColor,
             InvalidStrokeColor = General.InvalidStrokeColor,
+            ExcludedProcesses = General.ExcludedProcesses.ToArray(),
         };
 
         var tray = _original.Tray with

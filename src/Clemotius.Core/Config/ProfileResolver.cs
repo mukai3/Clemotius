@@ -82,13 +82,5 @@ public sealed class ProfileResolver
         return false;
     }
 
-    private static string NormalizeProcess(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return "";
-        string s = value.Trim();
-        if (s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            s = s[..^4];
-        return s;
-    }
+    private static string NormalizeProcess(string? value) => ProcessName.Normalize(value);
 }

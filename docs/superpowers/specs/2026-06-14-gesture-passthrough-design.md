@@ -32,7 +32,7 @@ MOVE はアプリへ通っているが起点の DOWN がアプリに届かない
 ## 方針（確定事項）
 
 - 主軸: **プロセス除外**（非成立入力のリアルタイム透過は原理的に不確実なため採らない）
-- 設定モデル: **専用の除外リスト**（全般ページ、プロファイルとは独立）
+- 設定モデル: **専用の除外リスト**（ジェスチャーページ、プロファイルとは独立。プロファイルの「対象プロセス」と同じくカンマ区切りの単一テキストで指定）
 - 除外範囲: **ジェスチャーのみ**（スクロール強化・タイトルバー操作は影響を受けない）
 
 ## 設計
@@ -81,22 +81,20 @@ lock (_gate)
 
 `return null` により `GestureEngine.OnRightDown` が `ctx is null` で素通しし、DOWN/MOVE/UP/右+ホイールすべてアプリへ透過する（既存挙動の再利用）。
 
-### 4. UI（全般ページ）
+### 4. UI（ジェスチャーページ）
 
-`src/Clemotius/SettingsUi/Pages/GeneralPage.xaml` に新セクション「ジェスチャーを無効にするアプリ」:
+`src/Clemotius/SettingsUi/Pages/GesturePage.xaml` の最下部に新セクション「ジェスチャーを無効にするアプリ」:
 
-- 登録済みプロセス名の一覧表示（`ListView` または `ItemsControl`）。
-- 追加: テキストボックス + 「追加」ボタン（空白・重複は無視）。
-- 削除: 選択項目の「削除」ボタン。
-- 説明文: 「登録したアプリでは Clemotius の右ボタンジェスチャーを使わず、アプリ独自のマウスジェスチャーをそのまま使えます。（例: JaneStyle）」
+- プロファイルの「対象プロセス」と同じ書式の**カンマ区切り単一テキストボックス**（例: `JaneStyle, mintty`）。追加/削除ボタンや一覧 UI は設けない。
+- 説明文: 「登録したアプリでは右ボタンをアプリ側へ透過し、アプリ独自のマウスジェスチャーをそのまま使えます（プロファイルに関わらず共通。カンマ区切りで複数指定可）。」
 
-`src/Clemotius/SettingsUi/GeneralViewModel.cs`:
+`src/Clemotius/SettingsUi/GestureViewModel.cs`（除外はジェスチャー設定 `GestureSettings` 由来のため、`GeneralViewModel` ではなくここに配置）:
 
-- `ObservableCollection<string> ExcludedProcesses`。
-- `AddExcludedProcessCommand` / `RemoveExcludedProcessCommand`（CommunityToolkit.Mvvm の `RelayCommand`）。
-- 設定読み込み時に config から populate、保存時に `GestureSettings.ExcludedProcesses` へ反映（既存の保存フローに合わせる）。
+- `[ObservableProperty] string ExcludedProcessesText`（読み込み時は config の配列を `", "` で連結。変更で `_changed()` を発火し即時適用に乗せる）。
+- `BuildExcludedProcesses()`: カンマ分割 → `ProcessName.Normalize` → 空除去・大小文字無視で重複排除 → 配列化。
+- `SettingsViewModel.Build()` で `GestureSettings.ExcludedProcesses` へ反映。
 
-実行中プロセスからの選択ヘルパは v1 では作らない（手入力のみ。将来拡張）。
+> 補足: UI は当初「全般ページに追加/削除リスト」で実装したが、(1) 全般ページが長くスクロールバーが自動非表示で発見しづらい、(2) ジェスチャー設定なのでジェスチャーページが自然、(3) プロファイルの対象プロセスと同じ書式の方が分かりやすい、という確認を経て現行案へ変更した。
 
 ### 5. テスト
 

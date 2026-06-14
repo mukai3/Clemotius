@@ -153,54 +153,6 @@
                 </Button>
             </Grid>
 
-            <TextBlock
-                Margin="0,16,0,4"
-                FontSize="16"
-                FontWeight="SemiBold"
-                Text="ジェスチャーを無効にするアプリ" />
-            <TextBlock
-                Margin="0,0,0,12"
-                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                TextWrapping="Wrap"
-                Text="登録したアプリでは Clemotius の右ボタンジェスチャーを使わず、アプリ独自のマウスジェスチャーをそのまま使えます。（例: JaneStyle）" />
-            <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <ui:TextBox
-                    PlaceholderText="プロセス名（例: JaneStyle または JaneStyle.exe）"
-                    Text="{Binding General.NewProcessName, UpdateSourceTrigger=PropertyChanged}">
-                    <ui:TextBox.InputBindings>
-                        <KeyBinding Key="Enter" Command="{Binding General.AddExcludedProcessCommand}" />
-                    </ui:TextBox.InputBindings>
-                </ui:TextBox>
-                <Button
-                    Grid.Column="2"
-                    Command="{Binding General.AddExcludedProcessCommand}"
-                    Content="追加" />
-            </Grid>
-            <ItemsControl ItemsSource="{Binding General.ExcludedProcesses}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock VerticalAlignment="Center" Text="{Binding}" />
-                            <Button
-                                Grid.Column="1"
-                                Padding="8,2"
-                                Command="{Binding DataContext.General.RemoveExcludedProcessCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                CommandParameter="{Binding}"
-                                Content="削除" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
         </StackPanel>
     </ScrollViewer>
 </Page>

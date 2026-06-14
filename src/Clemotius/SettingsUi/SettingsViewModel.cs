@@ -75,7 +75,7 @@ internal sealed partial class SettingsViewModel : ObservableObject
         _windowOpacity = Math.Clamp(tb.WindowOpacity, 10, 90);
 
         General = new GeneralViewModel(config, NotifyChanged);
-        Gesture = new GestureViewModel(config.Profiles, NotifyChanged);
+        Gesture = new GestureViewModel(config.Profiles, config.Gesture.ExcludedProcesses, NotifyChanged);
     }
 
     private ChoiceSlotViewModel Slot(
@@ -141,7 +141,7 @@ internal sealed partial class SettingsViewModel : ObservableObject
             StrokeWidth = General.StrokeWidth,
             ValidStrokeColor = General.ValidStrokeColor,
             InvalidStrokeColor = General.InvalidStrokeColor,
-            ExcludedProcesses = General.ExcludedProcesses.ToArray(),
+            ExcludedProcesses = Gesture.BuildExcludedProcesses(),
         };
 
         var tray = _original.Tray with

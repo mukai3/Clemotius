@@ -56,7 +56,16 @@ internal sealed partial class GestureViewModel : ObservableObject
     [ObservableProperty] private string _wheelDownText = "(なし)";
     [ObservableProperty] private bool _selectedIsRemovable;
 
-    public GestureViewModel(IEnumerable<GestureProfile> profiles, Action changed)
+    /// <summary>
+    /// ジェスチャーを無効にする（アプリ側へ右ボタンを透過する）プロセス名。プロファイル非依存の
+    /// 全体設定で、プロファイルの対象プロセスと同じくカンマ区切りで複数指定する。
+    /// </summary>
+    [ObservableProperty] private string _excludedProcessesText = "";
+
+    partial void OnExcludedProcessesTextChanged(string value) => _changed();
+
+    public GestureViewModel(
+        IEnumerable<GestureProfile> profiles, IEnumerable<string> excludedProcesses, Action changed)
     {
         _changed = changed;
 
@@ -65,6 +74,9 @@ internal sealed partial class GestureViewModel : ObservableObject
         foreach (var p in list)
             Profiles.Add(new ProfileItemViewModel(p));
         SelectedProfile = Profiles[0];
+
+        // バッキングフィールドへ直接代入して初期化時の変更通知（保存）を抑止する
+        _excludedProcessesText = string.Join(", ", excludedProcesses);
     }
 
     /// <summary>グローバル("*")プロファイルを1つだけ先頭に固定する（旧画面と同じ規則）。</summary>
@@ -190,6 +202,23 @@ internal sealed partial class GestureViewModel : ObservableObject
             item.Model.WheelDown = action;
         RefreshWheelTexts();
         _changed();
+    }
+
+    /// <summary>
+    /// Build() 用: カンマ区切りの除外テキストを正規化済みプロセス名の配列にする。
+    /// 空要素を除き、大文字小文字を無視して重複を取り除く。
+    /// </summary>
+    public string[] BuildExcludedProcesses()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<string>();
+        foreach (var part in ExcludedProcessesText.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            string name = ProcessName.Normalize(part);
+            if (name.Length > 0 && seen.Add(name))
+                result.Add(name);
+        }
+        return result.ToArray();
     }
 
     /// <summary>Build() 用: 現在の編集状態からプロファイル配列を構築する。</summary>

@@ -1,8 +1,6 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Clemotius.Core.Config;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 
 namespace Clemotius.SettingsUi;
 
@@ -26,17 +24,9 @@ internal sealed partial class GeneralViewModel : ObservableObject
     [ObservableProperty] private string _validStrokeColor = "#000000";
     [ObservableProperty] private string _invalidStrokeColor = "#000000";
 
-    /// <summary>ジェスチャーを無効にする（アプリ側へ右ボタンを透過する）プロセス名。</summary>
-    public ObservableCollection<string> ExcludedProcesses { get; } = new();
-
-    /// <summary>追加用テキストボックスの入力値。</summary>
-    [ObservableProperty] private string _newProcessName = "";
-
     public GeneralViewModel(ClemotiusConfig config, Action changed)
     {
         _changed = changed;
-        foreach (var name in config.Gesture.ExcludedProcesses)
-            ExcludedProcesses.Add(name);
         _showTrayIcon = config.Tray.ShowTrayIcon;
         _showBalloonTip = config.Tray.ShowBalloonTip;
         _range = Math.Clamp(config.Gesture.Range, 1, 100);
@@ -50,37 +40,10 @@ internal sealed partial class GeneralViewModel : ObservableObject
         _initialized = true;
     }
 
-    [RelayCommand]
-    private void AddExcludedProcess()
-    {
-        string name = ProcessName.Normalize(NewProcessName);
-        if (name.Length == 0)
-            return;
-        // 大文字小文字を無視して重複登録を防ぐ
-        if (ExcludedProcesses.Any(p => string.Equals(p, name, StringComparison.OrdinalIgnoreCase)))
-        {
-            NewProcessName = "";
-            return;
-        }
-        ExcludedProcesses.Add(name);
-        NewProcessName = "";
-        _changed();
-    }
-
-    [RelayCommand]
-    private void RemoveExcludedProcess(string? name)
-    {
-        if (name is null)
-            return;
-        if (ExcludedProcesses.Remove(name))
-            _changed();
-    }
-
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        // NewProcessName は追加用の一時入力なので保存トリガーにしない
-        if (_initialized && e.PropertyName != nameof(NewProcessName))
+        if (_initialized)
             _changed();
     }
 }

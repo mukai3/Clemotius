@@ -108,7 +108,7 @@ internal sealed class AppContext : ApplicationContext
         _keyboardHook.Install();
 
         _watchdog = new HookWatchdog(
-            [_mouseHook, _keyboardHook],
+            _mouseHook, _keyboardHook,
             onReinstalled: _modifiers.Reset);
 
         _tray = new TrayIcon();

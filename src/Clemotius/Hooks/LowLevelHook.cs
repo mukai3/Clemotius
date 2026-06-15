@@ -34,8 +34,21 @@ internal abstract class LowLevelHook : IDisposable
 
     public bool IsInstalled => _installed;
 
-    /// <summary>最後にイベントを受信した Environment.TickCount。生存監視用。</summary>
+    /// <summary>
+    /// 最後にイベントを受信した Environment.TickCount（注入イベントを含む）。
+    /// 生存監視の能動プローブ（自前注入が届いたか）の判定に使う。
+    /// </summary>
     public uint LastEventTick { get; private set; }
+
+    /// <summary>
+    /// 最後に「実ユーザー入力」を受信した Environment.TickCount（注入イベントは除く）。
+    /// 派生クラスが <see cref="NoteRealEvent"/> で更新する。どのデバイスが実際に
+    /// 使われたかの判定（キーボードフック生死の推論）に使う。
+    /// </summary>
+    public uint LastRealEventTick { get; private set; }
+
+    /// <summary>派生クラスが、注入でない実イベントを受けたときに呼ぶ。</summary>
+    protected void NoteRealEvent() => LastRealEventTick = (uint)Environment.TickCount;
 
     public void Install()
     {
@@ -78,6 +91,7 @@ internal abstract class LowLevelHook : IDisposable
             _hookId, _proc, NativeMethods.GetModuleHandleW(null), 0);
         _installed = _handle != 0;
         LastEventTick = (uint)Environment.TickCount;
+        LastRealEventTick = LastEventTick;
         _ready.Set(); // Install() のブロックを解除
 
         if (_handle == 0)

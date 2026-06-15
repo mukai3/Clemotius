@@ -14,6 +14,7 @@ internal sealed class KeyboardHook : LowLevelHook
         ref readonly var data = ref *(NativeMethods.KBDLLHOOKSTRUCT*)lParam;
         if ((data.flags & NativeMethods.LLKHF_INJECTED) != 0)
             return false;
+        NoteRealEvent();
         return Handler?.Invoke((int)wParam, data) ?? false;
     }
 }

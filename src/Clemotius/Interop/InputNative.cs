@@ -11,6 +11,7 @@ internal static class InputNative
     public const uint KEYEVENTF_KEYUP = 0x0002;
     public const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
 
+    public const uint MOUSEEVENTF_MOVE = 0x0001;
     public const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
     public const uint MOUSEEVENTF_RIGHTUP = 0x0010;
     public const uint MOUSEEVENTF_WHEEL = 0x0800;

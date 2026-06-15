@@ -8,7 +8,10 @@
     <Page.Resources>
         <local:HexBrushConverter x:Key="HexBrush" />
     </Page.Resources>
-    <ScrollViewer Padding="24,16" VerticalScrollBarVisibility="Visible">
+    <ScrollViewer
+        Padding="24,16"
+        Background="Transparent"
+        VerticalScrollBarVisibility="Visible">
         <StackPanel MaxWidth="640" HorizontalAlignment="Stretch">
 
             <TextBlock

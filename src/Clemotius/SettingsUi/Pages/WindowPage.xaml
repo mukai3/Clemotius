@@ -4,7 +4,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="ウィンドウ">
-    <ScrollViewer Padding="24,16" VerticalScrollBarVisibility="Visible">
+    <ScrollViewer
+        Padding="24,16"
+        Background="Transparent"
+        VerticalScrollBarVisibility="Visible">
         <StackPanel MaxWidth="640" HorizontalAlignment="Stretch">
             <TextBlock
                 Margin="0,0,0,12"

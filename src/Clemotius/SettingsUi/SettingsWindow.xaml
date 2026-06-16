@@ -54,7 +54,7 @@
                         <ui:SymbolIcon Symbol="WindowMultiple20" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="一般" TargetPageType="{x:Type pages:GeneralPage}">
+                <ui:NavigationViewItem Content="詳細" TargetPageType="{x:Type pages:GeneralPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />
                     </ui:NavigationViewItem.Icon>

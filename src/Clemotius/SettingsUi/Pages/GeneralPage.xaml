@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:Clemotius.SettingsUi"
-    Title="一般">
+    Title="詳細">
     <Page.Resources>
         <local:HexBrushConverter x:Key="HexBrush" />
     </Page.Resources>

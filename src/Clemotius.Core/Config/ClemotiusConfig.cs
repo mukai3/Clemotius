@@ -27,15 +27,15 @@ public sealed record ClemotiusConfig
         GesturesEnabled = true,
         Gestures = new[]
         {
-            new GestureBinding("L", new AppCommandAction(AppCommand.BrowserBackward)),  // 戻る
-            new GestureBinding("R", new AppCommandAction(AppCommand.BrowserForward)),   // 進む
-            new GestureBinding("DR", new KeyAction(KeyStrokeParser.Parse("Ctrl+W"))),
-            new GestureBinding("UDU", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"))),
-            new GestureBinding("DUD", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"))),
-            new GestureBinding("LU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))),
-            new GestureBinding("RU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))),
-            new GestureBinding("LD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
-            new GestureBinding("RD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),
+            new GestureBinding("L", new AppCommandAction(AppCommand.BrowserBackward)),  // ← 戻る
+            new GestureBinding("R", new AppCommandAction(AppCommand.BrowserForward)),   // → 進む
+            new GestureBinding("RU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))), // →↑ 先頭へ
+            new GestureBinding("RD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),  // →↓ 末尾へ
+            new GestureBinding("DR", new CloseAction()),                                 // ↓→ タブを閉じる
+            new GestureBinding("LR", new KeyAction(KeyStrokeParser.Parse("Ctrl+T"), "Chrome: 新規タブを開く (Ctrl+T)")),       // ←→
+            new GestureBinding("DL", new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+T"), "Chrome: 最近閉じたタブを開く (Ctrl+Shift+T)")), // ↓←
+            new GestureBinding("UDUD", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"), "Chrome: 完全再読み込み (Ctrl+F5)")),    // ↑↓↑↓
+            new GestureBinding("UD", new AppCommandAction(AppCommand.BrowserRefresh)),   // ↑↓ 再読み込み
         },
         // ユーザー ini の R+WU / R+WD（右ボタン+ホイール）由来
         WheelUp = new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+Tab")),   // 前のタブ

@@ -96,19 +96,37 @@ public class ConfigSerializerTests
     }
 
     [Fact]
-    public void DefaultBrowserProfile_HasBackForwardAndWheelTabSwitch()
+    public void DefaultBrowserProfile_MatchesSpec()
     {
-        // マージ廃止に伴い、戻る/進む(L/R)もブラウザプロファイルに含む。
-        // R+WU=前のタブ / R+WD=次のタブ（ユーザー ini 由来）も保持。
         var profile = ClemotiusConfig.DefaultBrowserProfile();
         Assert.Equal("chrome, msedge", profile.ProcessPattern);
+
+        // ストローク構成（既定値の参照仕様）
         var strokes = profile.Gestures.Select(g => g.Strokes).ToArray();
-        Assert.Contains("L", strokes);
-        Assert.Contains("R", strokes);
-        var up = Assert.IsType<KeyAction>(profile.WheelUp);
-        var down = Assert.IsType<KeyAction>(profile.WheelDown);
-        Assert.Equal("Ctrl+Shift+Tab", up.Stroke.ToString());
-        Assert.Equal("Ctrl+Tab", down.Stroke.ToString());
+        Assert.Equal(new[] { "L", "R", "RU", "RD", "DR", "LR", "DL", "UDUD", "UD" }, strokes);
+
+        GestureAction ActionOf(string s) => profile.Gestures.First(g => g.Strokes == s).Action;
+        Assert.Equal(AppCommand.BrowserBackward, Assert.IsType<AppCommandAction>(ActionOf("L")).Command);
+        Assert.Equal(AppCommand.BrowserForward, Assert.IsType<AppCommandAction>(ActionOf("R")).Command);
+        Assert.Equal("Ctrl+Home", Assert.IsType<KeyAction>(ActionOf("RU")).Stroke.ToString());
+        Assert.Equal("Ctrl+End", Assert.IsType<KeyAction>(ActionOf("RD")).Stroke.ToString());
+        Assert.IsType<CloseAction>(ActionOf("DR"));
+        Assert.Equal("Ctrl+T", Assert.IsType<KeyAction>(ActionOf("LR")).Stroke.ToString());
+        Assert.Equal("Ctrl+Shift+T", Assert.IsType<KeyAction>(ActionOf("DL")).Stroke.ToString());
+        Assert.Equal("Ctrl+F5", Assert.IsType<KeyAction>(ActionOf("UDUD")).Stroke.ToString());
+        Assert.Equal(AppCommand.BrowserRefresh, Assert.IsType<AppCommandAction>(ActionOf("UD")).Command);
+
+        // 右ボタン+ホイール（タブ切替）
+        Assert.Equal("Ctrl+Shift+Tab", Assert.IsType<KeyAction>(profile.WheelUp).Stroke.ToString());
+        Assert.Equal("Ctrl+Tab", Assert.IsType<KeyAction>(profile.WheelDown).Stroke.ToString());
+    }
+
+    [Fact]
+    public void DefaultScrollbarBehavior_IsPageAndThreeColumns()
+    {
+        var s = ClemotiusConfig.CreateDefault().Scroll;
+        Assert.Equal("code:55", s.OnVerticalScrollbar);   // 垂直バー＝ページスクロール
+        Assert.Equal("code:57", s.OnHorizontalScrollbar); // 水平バー＝水平3列スクロール
     }
 
     [Fact]

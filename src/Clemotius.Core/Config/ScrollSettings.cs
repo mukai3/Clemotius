@@ -11,13 +11,11 @@ public sealed record ScrollSettings
     /// <summary>
     /// スクロールバー上でホイールを回したときの挙動。オリジナルの「ホイール」タブの
     /// 「垂直/水平スクロールバー上でホイール回転」に対応。値は behavior 文字列
-    /// （"none" / "horizontal" / 後方互換の "code:NN"）。
-    /// 既定はユーザー ini を解読した結果に基づく:
-    ///   垂直バー=9行スクロール(53)→垂直方向＝通常スクロール扱い "none"、
-    ///   水平バー=水平6列スクロール(58)→水平化 "horizontal"。
+    /// （"none" / "horizontal" / "code:NN"）。
+    /// 既定: 垂直バー=ページスクロール(55)、水平バー=水平3列スクロール(57)。
     /// </summary>
-    public string OnVerticalScrollbar { get; init; } = "code:53";   // 9 行スクロール（垂直＝通常）
-    public string OnHorizontalScrollbar { get; init; } = "code:58"; // 水平 6 列スクロール（＝水平化）
+    public string OnVerticalScrollbar { get; init; } = "code:55";   // ページスクロール
+    public string OnHorizontalScrollbar { get; init; } = "code:57"; // 水平 3 列スクロール
 
     public int MergeWheelDelta { get; init; } = 2;
     public int WheelResolution { get; init; } = 1;

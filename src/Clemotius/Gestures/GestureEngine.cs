@@ -32,7 +32,9 @@ internal sealed class GestureEngine
     private System.Threading.Timer? _timeoutTimer;
     private volatile bool _pending;
     private bool _wheelUsed;
-    private volatile bool _gestureCancelled; // タイムアウト中断済み→次の RBUTTONUP を飲み込む
+    // タイムアウト（ストローク開始の猶予）が過ぎたら true。以降ストロークを受け付けず、
+    // 右クリックは右ボタンを離したときに発火する（保持時間に関係なく）。
+    private volatile bool _strokeWindowClosed;
     private int _startX;
     private int _startY;
 
@@ -102,7 +104,7 @@ internal sealed class GestureEngine
             _wheelUp = ctx.WheelUp;
             _wheelDown = ctx.WheelDown;
             _wheelUsed = false;
-            _gestureCancelled = false;
+            _strokeWindowClosed = false;
             _startX = x;
             _startY = y;
             _encoder = new StrokeEncoder(Math.Max(1, _provider.Range));
@@ -116,8 +118,8 @@ internal sealed class GestureEngine
 
     private void OnMove(int x, int y)
     {
-        if (!_pending)
-            return;
+        if (!_pending || _strokeWindowClosed)
+            return; // タイムアウト後は新たなストロークを受け付けない
         string? strokes = null;
         GestureAction? match = null;
         lock (_gate)
@@ -167,11 +169,6 @@ internal sealed class GestureEngine
 
         lock (_gate)
         {
-            if (_gestureCancelled)
-            {
-                _gestureCancelled = false;
-                return true; // タイムアウトで中断済み→再生済みなので UP を飲み込む
-            }
             if (!_pending)
                 return false;
             _pending = false;
@@ -210,7 +207,8 @@ internal sealed class GestureEngine
         return true;
     }
 
-    // ── 入力タイムアウト（押下後ストローク無しなら通常の右クリックに戻す） ──
+    // ── 入力タイムアウト（押下後この時間ストローク無しなら、以降ジェスチャー判定を打ち切る。
+    //     右クリックは再生せず、実際に右ボタンを離したときに OnRightUp で発火させる） ──
 
     private void StartTimeoutLocked()
     {
@@ -232,22 +230,19 @@ internal sealed class GestureEngine
 
     private void OnTimeout()
     {
-        bool replay = false;
         lock (_gate)
         {
             if (!_pending)
                 return; // 既に確定/解放済み
-            if (_encoder!.HasStrokes || _wheelUsed)
-                return; // 入力が始まっている→タイムアウト無効
-            _pending = false;
-            _gestureCancelled = true; // 次の RBUTTONUP を飲み込む
-            _encoder.Reset();
+            if (_strokeWindowClosed || _encoder!.HasStrokes || _wheelUsed)
+                return; // 既に打ち切り済み、または入力が始まっている→タイムアウト無効
+            // ストローク開始の猶予切れ。右クリックはここでは再生せず（メニューを出さず）、
+            // 保留を維持したまま判定だけ打ち切る。右ボタンを離した時点で OnRightUp が
+            // ストローク無しとして通常の右クリックを再生する。
+            _strokeWindowClosed = true;
+            _encoder!.Reset();
             CancelTimeoutLocked();
-            replay = true;
         }
-        if (replay)
-            ReplayRightClick();
-        GestureEnded?.Invoke();
     }
 
     private static bool IsButtonEvent(int message) => message

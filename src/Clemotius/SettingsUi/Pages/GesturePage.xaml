@@ -80,10 +80,22 @@
                         Margin="0,0,0,8"
                         TextChanged="OnFlyoutInputChanged" />
                     <TextBlock Margin="0,0,0,4" Opacity="0.8" Text="対象プロセス (カンマ区切りで複数可)" />
-                    <TextBox
-                        x:Name="FlyoutPattern"
-                        Margin="0,0,0,8"
-                        TextChanged="OnFlyoutInputChanged" />
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Name="FlyoutPattern"
+                            Grid.Column="0"
+                            TextChanged="OnFlyoutInputChanged" />
+                        <ui:Button
+                            x:Name="FlyoutPickButton"
+                            Grid.Column="2"
+                            Click="OnPickProfileProcesses"
+                            Content="選択..." />
+                    </Grid>
                     <ui:ToggleSwitch
                         x:Name="FlyoutEnabled"
                         Margin="0,0,0,8"
@@ -206,9 +218,21 @@
                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                 TextWrapping="Wrap"
                 Text="登録したアプリでは右ボタンをアプリ側へ透過し、アプリ独自のマウスジェスチャーをそのまま使えます（プロファイルに関わらず共通。カンマ区切りで複数指定可。例: JaneStyle, mintty）。" />
-            <ui:TextBox
-                PlaceholderText="カンマ区切りで複数可（例: JaneStyle, mintty）"
-                Text="{Binding Gesture.ExcludedProcessesText, UpdateSourceTrigger=PropertyChanged}" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:TextBox
+                    Grid.Column="0"
+                    PlaceholderText="カンマ区切りで複数可（例: JaneStyle, mintty）"
+                    Text="{Binding Gesture.ExcludedProcessesText, UpdateSourceTrigger=PropertyChanged}" />
+                <ui:Button
+                    Grid.Column="2"
+                    Click="OnPickExcludedProcesses"
+                    Content="選択..." />
+            </Grid>
         </StackPanel>
     </Grid>
 </Page>

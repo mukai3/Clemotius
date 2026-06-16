@@ -208,18 +208,7 @@ internal sealed partial class GestureViewModel : ObservableObject
     /// Build() 用: カンマ区切りの除外テキストを正規化済みプロセス名の配列にする。
     /// 空要素を除き、大文字小文字を無視して重複を取り除く。
     /// </summary>
-    public string[] BuildExcludedProcesses()
-    {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var result = new List<string>();
-        foreach (var part in ExcludedProcessesText.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            string name = ProcessName.Normalize(part);
-            if (name.Length > 0 && seen.Add(name))
-                result.Add(name);
-        }
-        return result.ToArray();
-    }
+    public string[] BuildExcludedProcesses() => ProcessNameList.Parse(ExcludedProcessesText).ToArray();
 
     /// <summary>Build() 用: 現在の編集状態からプロファイル配列を構築する。</summary>
     public GestureProfile[] BuildProfiles() => Profiles.Select(p => p.Model.ToProfile()).ToArray();

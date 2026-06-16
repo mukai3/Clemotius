@@ -38,6 +38,7 @@ public partial class GesturePage
         FlyoutPattern.Text = item.IsGlobal ? "(すべてのアプリ)" : item.Model.ProcessPattern;
         FlyoutName.IsEnabled = !item.IsGlobal;
         FlyoutPattern.IsEnabled = !item.IsGlobal;
+        FlyoutPickButton.IsEnabled = !item.IsGlobal;
         FlyoutEnabled.IsChecked = item.Model.GesturesEnabled;
         FlyoutError.Visibility = Visibility.Collapsed;
         FlyoutSave.IsEnabled = true;
@@ -71,6 +72,27 @@ public partial class GesturePage
     }
 
     private void OnFlyoutCancel(object sender, RoutedEventArgs e) => ProfileFlyout.IsOpen = false;
+
+    /// <summary>フライアウトの対象プロセスを、実行中アプリの選択ダイアログで設定する。</summary>
+    private void OnPickProfileProcesses(object sender, RoutedEventArgs e)
+    {
+        var dlg = new ProcessPickerDialog(FlyoutPattern.Text) { Owner = OwnerWindow };
+        if (dlg.ShowDialog() == true)
+        {
+            FlyoutPattern.Text = dlg.Result; // TextChanged 経由で検証・保存ボタン状態を更新
+            FlyoutPattern.Focus();
+        }
+    }
+
+    /// <summary>ジェスチャーを無効にするアプリを、実行中アプリの選択ダイアログで設定する。</summary>
+    private void OnPickExcludedProcesses(object sender, RoutedEventArgs e)
+    {
+        if (Vm is not { } vm)
+            return;
+        var dlg = new ProcessPickerDialog(vm.ExcludedProcessesText) { Owner = OwnerWindow };
+        if (dlg.ShowDialog() == true)
+            vm.ExcludedProcessesText = dlg.Result;
+    }
 
     // ── ジェスチャー一覧 ──
 

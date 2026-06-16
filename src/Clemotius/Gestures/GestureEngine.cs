@@ -65,6 +65,8 @@ internal sealed class GestureEngine
             case NativeMethods.WM_MOUSEMOVE:
                 if (_pending)
                     OnMove(data.pt.X, data.pt.Y);
+                else
+                    _provider.Prime(data.pt.X, data.pt.Y); // 右DOWN前に項目判定を温める
                 return false;
 
             case NativeMethods.WM_MOUSEWHEEL:

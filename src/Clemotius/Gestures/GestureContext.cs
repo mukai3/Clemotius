@@ -21,6 +21,12 @@ internal interface IGestureContextProvider
 {
     GestureContext? Resolve(int startX, int startY);
 
+    /// <summary>
+    /// マウス移動中の事前判定。カーソル下がプロファイル一致ウィンドウなら、項目（ファイル/フォルダ）
+    /// 判定をバックグラウンドで温めておき、右DOWN時に即答できるようにする（フックスレッドは待たない）。
+    /// </summary>
+    void Prime(int startX, int startY);
+
     /// <summary>ストローク確定のしきい値（gesture.range）。</summary>
     int Range { get; }
 

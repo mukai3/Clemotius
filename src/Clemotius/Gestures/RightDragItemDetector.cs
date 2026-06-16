@@ -11,9 +11,9 @@ namespace Clemotius.Gestures;
 ///
 /// 設計原則（フックスレッドで無制限の同期クロスプロセス呼び出しをしない）に従い、MSAA 呼び出しは
 /// 必ずバックグラウンドで行い、フックスレッドは一切ブロックしない（ScrollBarDetector と同方式）。
-/// 右DOWN時は近傍・短時間のキャッシュがあればそれを使い、無ければバックグラウンド判定を起動して
-/// この回は <c>false</c>（ジェスチャー優先）を返す。「不明時は透過」にするとジェスチャーを取りこぼす
-/// ため、不明時は必ずジェスチャー側に倒す。
+/// <see cref="Prime"/> をマウス移動中に呼んでキャッシュを温めておくことで、右DOWNの瞬間には
+/// すでに判定済みになっており、ブロックも取りこぼしもなく項目/背景を即答できる。万一キャッシュが
+/// 無い場合は <see cref="IsOverDraggableItem"/> は false（ジェスチャー優先）を返す（取りこぼし防止）。
 /// </summary>
 internal static class RightDragItemDetector
 {
@@ -21,33 +21,56 @@ internal static class RightDragItemDetector
     private const int ROLE_SYSTEM_LISTITEM = 34;   // リスト項目（ファイル/フォルダ等）
     private const int ROLE_SYSTEM_OUTLINEITEM = 35; // ツリー項目（フォルダツリー等）
 
-    private const uint CacheFreshMs = 400;
-    private const int CacheNearPx = 8;
+    private const int NearPx = 8;
+    // 右DOWN読み出しの有効期間。静止カーソル下の項目/背景はしばらく変わらないため長め。
+    private const uint ReadFreshMs = 2000;
+    // 移動中の再判定しきい。これより古ければホバー先読みで温め直す。
+    private const uint PrimeFreshMs = 400;
+    // バックグラウンド判定の最小起動間隔（先読みの多重・過剰起動を抑える）。
+    private const uint MinProbeIntervalMs = 60;
 
     private sealed record CacheEntry(int X, int Y, bool IsItem, uint Tick);
     private static volatile CacheEntry? _cache;
-    private static int _probing; // バックグラウンド判定の多重起動防止 (0/1)
+    private static int _probing;            // 単発起動ガード (0/1)
+    private static uint _lastProbeStartTick; // 直近のバックグラウンド判定起動時刻
 
     /// <returns>項目（ファイル/フォルダ等）の上なら true。背景上・不明なら false（ジェスチャー優先）。</returns>
     public static bool IsOverDraggableItem(int x, int y)
     {
-        var c = _cache;
-        if (c is not null && (uint)Environment.TickCount - c.Tick < CacheFreshMs
-            && Math.Abs(x - c.X) < CacheNearPx && Math.Abs(y - c.Y) < CacheNearPx)
-        {
-            return c.IsItem;
-        }
-
-        // フックスレッドは待たない。次回以降のためにバックグラウンドで判定してキャッシュへ反映し、
-        // 今回はジェスチャーを優先する（取りこぼし防止）。
-        KickProbe(x, y);
+        if (Lookup(x, y, ReadFreshMs) is bool cached)
+            return cached;
+        // 温まっていなければフックスレッドは待たず、次回以降のため起動だけして今回はジェスチャー優先。
+        KickProbe(x, y, force: true);
         return false;
     }
 
-    private static void KickProbe(int x, int y)
+    /// <summary>マウス移動中の事前判定。右DOWN前にキャッシュを温める。</summary>
+    public static void Prime(int x, int y)
     {
+        if (Lookup(x, y, PrimeFreshMs) is not null)
+            return; // 近傍に十分新しい結果あり
+        KickProbe(x, y, force: false);
+    }
+
+    private static bool? Lookup(int x, int y, uint freshMs)
+    {
+        var c = _cache;
+        if (c is not null && (uint)Environment.TickCount - c.Tick < freshMs
+            && Math.Abs(x - c.X) < NearPx && Math.Abs(y - c.Y) < NearPx)
+        {
+            return c.IsItem;
+        }
+        return null;
+    }
+
+    private static void KickProbe(int x, int y, bool force)
+    {
+        uint now = (uint)Environment.TickCount;
+        if (!force && now - _lastProbeStartTick < MinProbeIntervalMs)
+            return;
         if (Interlocked.CompareExchange(ref _probing, 1, 0) != 0)
             return;
+        _lastProbeStartTick = now;
         Task.Run(() =>
         {
             try

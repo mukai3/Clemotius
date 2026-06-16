@@ -88,5 +88,36 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
         }
     }
 
+    // Prime はフックスレッドからのみ呼ばれる（ロック不要）。トップレベル窓が変わったときだけ
+    // プロセス解決して「プロファイル一致か」を覚え、移動ごとのコストを最小化する。
+    private nint _primeHwnd;
+    private bool _primeProfiled;
+
+    public void Prime(int startX, int startY)
+    {
+        // ここで行うのはローカルで安全な呼び出しのみ（WindowFromPoint 等。相手UIスレッドで
+        // ブロックしうる MSAA はバックグラウンドの RightDragItemDetector 側で実行する）。
+        nint target = TargetWindowResolver.Resolve(startX, startY);
+        if (target != _primeHwnd)
+        {
+            _primeHwnd = target;
+            _primeProfiled = IsProfiledTarget(target);
+        }
+        if (_primeProfiled)
+            RightDragItemDetector.Prime(startX, startY);
+    }
+
+    private bool IsProfiledTarget(nint target)
+    {
+        InputNative.GetWindowThreadProcessId(target, out uint pid);
+        if (pid == OwnProcessId)
+            return false;
+        string? process = ProcessNameResolver.FromWindow(target);
+        ProfileResolver resolver;
+        lock (_gate)
+            resolver = _resolver;
+        return resolver.Resolve(process) is { GesturesEnabled: true };
+    }
+
     private static readonly GestureMatcher EmptyMatcher = new(Array.Empty<GestureBinding>());
 }

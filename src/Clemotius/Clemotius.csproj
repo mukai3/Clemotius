@@ -16,10 +16,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 実行時にトレイ/ウィンドウへ設定するため出力にコピーする -->
-    <Content Include="clemotius.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <!-- トレイ/グレースケール用にアセンブリへ埋め込む（出力に loose な .ico を置かない）。
+         exe ファイル自体のアイコンは上の ApplicationIcon で別途埋め込まれる。 -->
+    <EmbeddedResource Include="clemotius.ico" />
   </ItemGroup>
 
   <ItemGroup>

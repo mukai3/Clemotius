@@ -6,7 +6,7 @@ using Clemotius.Interop;
 namespace Clemotius;
 
 /// <summary>
-/// アプリ共通のアイコン（clemotius.ico）。出力ディレクトリから読み込み、
+/// アプリ共通のアイコン（clemotius.ico）。アセンブリの埋め込みリソースから読み込み、
 /// 取得できなければ既定のアプリアイコンにフォールバックする。
 /// 一時停止表示用にグレースケール版も提供する。
 /// </summary>
@@ -21,10 +21,14 @@ internal static class AppIcon
         {
             if (_shared is null)
             {
-                string path = Path.Combine(System.AppContext.BaseDirectory, "clemotius.ico");
                 try
                 {
-                    _shared = File.Exists(path) ? new Icon(path) : SystemIcons.Application;
+                    var asm = typeof(AppIcon).Assembly;
+                    string? name = Array.Find(
+                        asm.GetManifestResourceNames(),
+                        n => n.EndsWith("clemotius.ico", StringComparison.OrdinalIgnoreCase));
+                    using var stream = name is null ? null : asm.GetManifestResourceStream(name);
+                    _shared = stream is not null ? new Icon(stream) : SystemIcons.Application;
                 }
                 catch (Exception ex) when (ex is IOException or ArgumentException)
                 {

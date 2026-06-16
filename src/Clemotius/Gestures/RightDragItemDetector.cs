@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Accessibility;
+using Clemotius.Interop;
 
 namespace Clemotius.Gestures;
 
@@ -9,9 +10,10 @@ namespace Clemotius.Gestures;
 /// ファイル/フォルダの右ドラッグ）を成立させる。項目の無い背景上ならジェスチャーを扱う。
 ///
 /// 設計原則（フックスレッドで無制限の同期クロスプロセス呼び出しをしない）に従い、MSAA 呼び出しは
-/// 別スレッドで実行して最大 ~30ms だけ待つ。時間内に判定できなければ「項目上」とみなして透過する
-/// （壊れた右ドラッグは致命的なため、不確定時はドラッグ保護を優先する安全側）。
-/// 連続右クリックに備えて近傍・短時間の結果はキャッシュする。
+/// 必ずバックグラウンドで行い、フックスレッドは一切ブロックしない（ScrollBarDetector と同方式）。
+/// 右DOWN時は近傍・短時間のキャッシュがあればそれを使い、無ければバックグラウンド判定を起動して
+/// この回は <c>false</c>（ジェスチャー優先）を返す。「不明時は透過」にするとジェスチャーを取りこぼす
+/// ため、不明時は必ずジェスチャー側に倒す。
 /// </summary>
 internal static class RightDragItemDetector
 {
@@ -19,41 +21,64 @@ internal static class RightDragItemDetector
     private const int ROLE_SYSTEM_LISTITEM = 34;   // リスト項目（ファイル/フォルダ等）
     private const int ROLE_SYSTEM_OUTLINEITEM = 35; // ツリー項目（フォルダツリー等）
 
-    private const int ProbeTimeoutMs = 30;
+    private const uint CacheFreshMs = 400;
+    private const int CacheNearPx = 8;
 
     private sealed record CacheEntry(int X, int Y, bool IsItem, uint Tick);
     private static volatile CacheEntry? _cache;
+    private static int _probing; // バックグラウンド判定の多重起動防止 (0/1)
 
-    /// <returns>項目（ファイル/フォルダ等）の上なら true。背景上なら false。</returns>
+    /// <returns>項目（ファイル/フォルダ等）の上なら true。背景上・不明なら false（ジェスチャー優先）。</returns>
     public static bool IsOverDraggableItem(int x, int y)
     {
         var c = _cache;
-        uint now = (uint)Environment.TickCount;
-        if (c is not null && now - c.Tick < 250 && Math.Abs(x - c.X) < 8 && Math.Abs(y - c.Y) < 8)
+        if (c is not null && (uint)Environment.TickCount - c.Tick < CacheFreshMs
+            && Math.Abs(x - c.X) < CacheNearPx && Math.Abs(y - c.Y) < CacheNearPx)
+        {
             return c.IsItem;
-
-        bool? result = null;
-        try
-        {
-            var task = Task.Run(() => ProbeIsItem(x, y));
-            if (task.Wait(ProbeTimeoutMs))
-                result = task.Result;
-        }
-        catch (AggregateException)
-        {
-            // ProbeIsItem 内で握り切れなかった例外。判定不能として扱う。
         }
 
-        if (result is bool r)
-        {
-            _cache = new CacheEntry(x, y, r, now);
-            return r;
-        }
-        // 判定不能（相手ビジー等で 30ms 以内に応答せず）: ドラッグ保護を優先して項目扱い（透過）。
-        return true;
+        // フックスレッドは待たない。次回以降のためにバックグラウンドで判定してキャッシュへ反映し、
+        // 今回はジェスチャーを優先する（取りこぼし防止）。
+        KickProbe(x, y);
+        return false;
     }
 
-    private static bool ProbeIsItem(int x, int y)
+    private static void KickProbe(int x, int y)
+    {
+        if (Interlocked.CompareExchange(ref _probing, 1, 0) != 0)
+            return;
+        Task.Run(() =>
+        {
+            try
+            {
+                bool isItem = Probe(x, y);
+                _cache = new CacheEntry(x, y, isItem, (uint)Environment.TickCount);
+            }
+            finally
+            {
+                Volatile.Write(ref _probing, 0);
+            }
+        });
+    }
+
+    private static bool Probe(int x, int y)
+    {
+        var pt = new NativeMethods.POINT { X = x, Y = y };
+        nint hwnd = InputNative.WindowFromPoint(pt);
+        if (hwnd == 0)
+            return false;
+
+        // ブラウザ(Chromium/Gecko)は a11y 既定無効で MSAA が遅延・不定になりやすく、かつ
+        // ファイル/フォルダ項目を持たない。クラス名で除外して MSAA 呼び出し自体を避ける
+        // （Chromium のアクセシビリティを起こす副作用も防ぐ）。
+        if (IsBrowserClass(GetClassName(hwnd)))
+            return false;
+
+        return ProbeMsaa(x, y);
+    }
+
+    private static bool ProbeMsaa(int x, int y)
     {
         try
         {
@@ -80,6 +105,10 @@ internal static class RightDragItemDetector
         return false;
     }
 
+    private static bool IsBrowserClass(string cls)
+        => cls.StartsWith("Chrome_", StringComparison.Ordinal)
+        || cls.StartsWith("Mozilla", StringComparison.Ordinal);
+
     private static int RoleOf(IAccessible acc, object childId)
     {
         try
@@ -90,6 +119,13 @@ internal static class RightDragItemDetector
         {
             return 0;
         }
+    }
+
+    private static string GetClassName(nint hwnd)
+    {
+        var buffer = new char[64];
+        int len = InputNative.GetClassNameW(hwnd, buffer, buffer.Length);
+        return len > 0 ? new string(buffer, 0, len) : "";
     }
 
     [StructLayout(LayoutKind.Sequential)]

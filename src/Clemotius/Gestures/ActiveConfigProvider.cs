@@ -59,7 +59,7 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
         string? process = ProcessNameResolver.FromWindow(target);
 
         // リゾルバをスナップショットし、一致プロファイルだけを対象に項目判定を行う
-        // （MSAA 呼び出しは ~30ms 掛かりうるため、ロックの外で実行する）
+        // （項目判定はフックスレッドを止めないよう非ブロッキング。ロック保持時間も最小化する）
         ProfileResolver resolver;
         lock (_gate)
             resolver = _resolver;

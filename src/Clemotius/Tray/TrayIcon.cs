@@ -48,6 +48,7 @@ internal sealed class TrayIcon : IDisposable
     public void SetPausedIndicator(bool paused)
     {
         _icon.Text = paused ? "Clemotius(一時停止中)" : "Clemotius";
+        _icon.Icon = paused ? AppIcon.Grayscale : AppIcon.Shared;
     }
 
     public void Dispose()

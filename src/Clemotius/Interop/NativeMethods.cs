@@ -73,6 +73,10 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool UnhookWindowsHookEx(nint hhk);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool DestroyIcon(nint hIcon);
+
     [DllImport("user32.dll")]
     public static extern nint CallNextHookEx(nint hhk, int nCode, nint wParam, nint lParam);
 

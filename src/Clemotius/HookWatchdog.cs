@@ -26,6 +26,12 @@ internal sealed class HookWatchdog : IDisposable
     private const int ProbeVerifyDelayMs = 250; // 注入が届くのを待つ猶予
     private const int RequiredMissStreak = 2;   // 連続でこの回数不達なら死亡と判断
 
+    // この時間ユーザーの実入力が無ければプローブ注入をスキップする（省電力を妨げないため）。
+    // SendInput はカーソル 0 移動でも OS のアイドルタイマーをリセットしモニタ OFF/スリープを
+    // 妨げるため、アイドル中は注入しない。閾値は CheckIntervalMs より短くし、自前注入が次周期で
+    // 必ずアイドル扱いになるようにして「注入→タイマーリセット」の連鎖を断ち切る。
+    private const uint IdleSkipThresholdMs = 15_000;
+
     private readonly System.Windows.Forms.Timer _timer;
     private readonly System.Windows.Forms.Timer _probeVerify;
     private readonly MouseHook _mouse;
@@ -57,10 +63,29 @@ internal sealed class HookWatchdog : IDisposable
         if (_probeInFlight)
             return;
 
-        if (_mouse.IsInstalled)
+        // アイドル中（実入力が一定時間ない）は注入を行わず、OS のスリープ/モニタ OFF を妨げない。
+        // 注入しない＝この周期は生死不確定とし、再設置もキーボード推論も行わない。実入力が
+        // 再開すれば次以降の周期でプローブが走り、死亡フックは速やかに再設置される。
+        if (_mouse.IsInstalled && !SystemIdle())
             StartMouseProbe();
         else
             _mouseAliveThisCycle = false;
+    }
+
+    /// <summary>
+    /// 直近 <see cref="IdleSkipThresholdMs"/> の間にシステム全体の入力が無ければ true。
+    /// GetLastInputInfo はフックの生死に依存しないシステム値（フックが死んでいても実入力を反映する）。
+    /// 取得に失敗した場合は従来どおりプローブする（false 扱い）。
+    /// </summary>
+    private static bool SystemIdle()
+    {
+        var info = new NativeMethods.LASTINPUTINFO
+        {
+            cbSize = (uint)Marshal.SizeOf<NativeMethods.LASTINPUTINFO>(),
+        };
+        if (!NativeMethods.GetLastInputInfo(ref info))
+            return false;
+        return HookLiveness.Elapsed((uint)Environment.TickCount, info.dwTime) >= IdleSkipThresholdMs;
     }
 
     // ── マウス: 能動プローブ ──

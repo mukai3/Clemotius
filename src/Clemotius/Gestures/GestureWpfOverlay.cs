@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,44 +10,22 @@ using WpfBrushes = System.Windows.Media.Brushes;
 namespace Clemotius.Gestures;
 
 /// <summary>
-/// ジェスチャー軌跡を描画する WPF オーバーレイ（透明・クリック透過・常時最前面）。
-/// WPF の保持モード描画により Hide/Show を繰り返さなくても更新が確実に反映される
-/// （WinForms レイヤード方式で軌跡が描画されない問題への対処）。試作品 KazaguruR を移植。
+/// ジェスチャー軌跡を描画する WPF オーバーレイの管理クラス。
+/// ジェスチャーごとに専用の透明ウィンドウを生成し、終了時に閉じる。
+///
+/// 全画面の透明レイヤードウィンドウを「出しっぱなし」にすると、モニタのスリープ復帰・
+/// ロック解除・GPU ドライバリセット等で描画面が稀に壊れて灰色化し、閉じないため画面に
+/// 残り続ける（復帰不能）。逆に Hide/Show で使い回すとレイヤードウィンドウが前回フレーム
+/// （前回の軌跡）を一瞬残す。都度生成・都度破棄なら、毎回まっさらな描画面になり前フレーム
+/// 残りが無く、待機中はウィンドウが存在しないため灰色化が残らない。
+///
 /// フックスレッドからは直接呼ばず、UI スレッドへマーシャルしてから呼ぶこと。
 /// </summary>
-internal sealed class GestureWpfOverlay : Window
+internal sealed class GestureWpfOverlay
 {
-    private readonly Canvas _canvas = new();
-    private Polyline? _line;
-    private double _dpiScale = 1.0;
-    private WpfColor _strokeColor = WpfColor.FromRgb(0x80, 0xFF, 0x00);
     private double _strokeWidth = 2;
-    private bool _shownOnce;
-
-    public GestureWpfOverlay()
-    {
-        // アプリ全体の暗黙 Window スタイル（WPF-UI テーマ）を継承しない。継承すると
-        // テーマ背景でウィンドウ全体が塗られ、透明オーバーレイが灰色全画面化してしまう。
-        Style = new Style(typeof(Window));
-
-        WindowStyle = WindowStyle.None;
-        AllowsTransparency = true;
-        Background = WpfBrushes.Transparent;
-        ShowInTaskbar = false;
-        ShowActivated = false;
-        Focusable = false;
-        Topmost = true;
-        IsHitTestVisible = false;
-        ResizeMode = ResizeMode.NoResize;
-        WindowStartupLocation = WindowStartupLocation.Manual;
-        Content = _canvas;
-    }
-
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        OverlayNative.MakeClickThrough(new System.Windows.Interop.WindowInteropHelper(this).Handle);
-    }
+    private WpfColor _strokeColor = WpfColor.FromRgb(0x80, 0xFF, 0x00);
+    private TrailWindow? _window;
 
     public void ApplySettings(GestureSettings g)
     {
@@ -56,53 +33,87 @@ internal sealed class GestureWpfOverlay : Window
         _strokeColor = OverlayNative.ParseColor(g.ValidStrokeColor);
     }
 
-    /// <summary>ジェスチャー開始。全画面に広げて軌跡をリセットする（物理ピクセル座標）。</summary>
+    /// <summary>ジェスチャー開始。新しい全画面ウィンドウを生成して軌跡を描き始める（物理ピクセル座標）。</summary>
     public void Begin(int physX, int physY)
     {
-        _dpiScale = OverlayNative.GetDpiScaleAtPoint(physX, physY);
-        Left = SystemParameters.VirtualScreenLeft;
-        Top = SystemParameters.VirtualScreenTop;
-        Width = SystemParameters.VirtualScreenWidth;
-        Height = SystemParameters.VirtualScreenHeight;
-
-        if (_line is not null)
-            _canvas.Children.Remove(_line);
-        _line = new Polyline
-        {
-            Stroke = new SolidColorBrush(_strokeColor),
-            StrokeThickness = _strokeWidth,
-            StrokeLineJoin = PenLineJoin.Round,
-            StrokeStartLineCap = PenLineCap.Round,
-            StrokeEndLineCap = PenLineCap.Round,
-        };
-        _canvas.Children.Add(_line);
-        _line.Points.Add(ToCanvas(physX, physY));
-
-        // 初回のみ表示。以後は隠さない（Hide/Show による前フレーム残りを避ける）。
-        if (!_shownOnce)
-        {
-            Show();
-            _shownOnce = true;
-        }
+        _window?.Close();
+        _window = new TrailWindow(_strokeColor, _strokeWidth);
+        _window.Begin(physX, physY);
+        _window.Show();
     }
 
-    public void AddPoint(int physX, int physY) => _line?.Points.Add(ToCanvas(physX, physY));
+    public void AddPoint(int physX, int physY) => _window?.AddPoint(physX, physY);
 
-    /// <summary>
-    /// ジェスチャー終了。軌跡をクリアするのみ（ウィンドウは隠さない）。
-    /// Hide/Show するとレイヤードウィンドウが前回フレーム（前回の軌跡）を一瞬残すため、
-    /// 隠さず線だけ消す。空のキャンバスは透明なので画面には何も残らない（背景の灰色化は
-    /// 暗黙 Window スタイルを継承しないことで別途回避済み）。
-    /// </summary>
+    /// <summary>ジェスチャー終了。ウィンドウを閉じる（描画面ごと破棄）。</summary>
     public void End()
     {
-        if (_line is not null)
-        {
-            _canvas.Children.Remove(_line);
-            _line = null;
-        }
+        _window?.Close();
+        _window = null;
     }
 
-    private WpfPoint ToCanvas(int physX, int physY)
-        => new(physX / _dpiScale - Left, physY / _dpiScale - Top);
+    /// <summary>アプリ終了時の後始末。</summary>
+    public void Close()
+    {
+        _window?.Close();
+        _window = null;
+    }
+
+    /// <summary>1 ジェスチャーぶんの軌跡を描く使い捨ての透明ウィンドウ。</summary>
+    private sealed class TrailWindow : Window
+    {
+        private readonly Canvas _canvas = new();
+        private readonly Polyline _line;
+        private double _dpiScale = 1.0;
+
+        public TrailWindow(WpfColor color, double width)
+        {
+            // アプリ全体の暗黙 Window スタイル（WPF-UI テーマ）を継承しない。継承すると
+            // テーマ背景でウィンドウ全体が塗られ、透明オーバーレイが灰色全画面化してしまう。
+            Style = new Style(typeof(Window));
+
+            WindowStyle = WindowStyle.None;
+            AllowsTransparency = true;
+            Background = WpfBrushes.Transparent;
+            ShowInTaskbar = false;
+            ShowActivated = false;
+            Focusable = false;
+            Topmost = true;
+            IsHitTestVisible = false;
+            ResizeMode = ResizeMode.NoResize;
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Content = _canvas;
+
+            _line = new Polyline
+            {
+                Stroke = new SolidColorBrush(color),
+                StrokeThickness = width,
+                StrokeLineJoin = PenLineJoin.Round,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+            };
+            _canvas.Children.Add(_line);
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            OverlayNative.MakeClickThrough(new System.Windows.Interop.WindowInteropHelper(this).Handle);
+        }
+
+        /// <summary>全画面に広げ、開始点を打つ（Show 前に呼ぶ）。</summary>
+        public void Begin(int physX, int physY)
+        {
+            _dpiScale = OverlayNative.GetDpiScaleAtPoint(physX, physY);
+            Left = SystemParameters.VirtualScreenLeft;
+            Top = SystemParameters.VirtualScreenTop;
+            Width = SystemParameters.VirtualScreenWidth;
+            Height = SystemParameters.VirtualScreenHeight;
+            _line.Points.Add(ToCanvas(physX, physY));
+        }
+
+        public void AddPoint(int physX, int physY) => _line.Points.Add(ToCanvas(physX, physY));
+
+        private WpfPoint ToCanvas(int physX, int physY)
+            => new(physX / _dpiScale - Left, physY / _dpiScale - Top);
+    }
 }

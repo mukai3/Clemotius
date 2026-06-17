@@ -73,9 +73,14 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
             return new GestureContext(EmptyMatcher, Enabled: false, WheelUp: null, WheelDown: null);
 
         // ファイル/フォルダ等の項目の上では右ボタンをアプリへ透過し、アプリ独自の右ドラッグを保つ。
-        // 項目の無い背景上ではジェスチャーを扱う（エクスプローラ等での両立）。
-        if (RightDragItemDetector.IsOverDraggableItem(startX, startY))
+        // 項目の無い背景上ではジェスチャーを扱う（エクスプローラ等での両立）。判定は3値:
+        //   true  = 既知の項目上 → 透過（DOWN を飲み込まない）
+        //   false = 既知の背景上 → ジェスチャー
+        //   null  = 未確定（コールド）→ ジェスチャー保留に入りつつ、項目と分かり次第ドラッグへ転換
+        bool? known = RightDragItemDetector.TryKnownItem(startX, startY);
+        if (known == true)
             return null;
+        bool confirmDrag = known is null;
 
         lock (_gate)
         {
@@ -84,9 +89,14 @@ internal sealed class ActiveConfigProvider : IGestureContextProvider
                 matcher = new GestureMatcher(profile.Gestures);
                 _matcherCache[profile.Name] = matcher;
             }
-            return new GestureContext(matcher, Enabled: true, profile.WheelUp, profile.WheelDown);
+            return new GestureContext(
+                matcher, Enabled: true, profile.WheelUp, profile.WheelDown,
+                ConfirmDragOnItem: confirmDrag);
         }
     }
+
+    public void ConfirmDragAsync(int startX, int startY, Action<bool> onIsItem)
+        => RightDragItemDetector.ConfirmItemAsync(startX, startY, onIsItem);
 
     // Prime はフックスレッドからのみ呼ばれる（ロック不要）。トップレベル窓が変わったときだけ
     // プロセス解決して「プロファイル一致か」を覚え、移動ごとのコストを最小化する。

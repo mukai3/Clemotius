@@ -37,6 +37,9 @@ internal sealed class GestureEngine
     private volatile bool _strokeWindowClosed;
     private int _startX;
     private int _startY;
+    // 各右DOWNで増やす世代番号。非同期のドラッグ確定コールバックが、別の新しい
+    // ジェスチャーへ誤って作用しないよう突き合わせる。
+    private int _gestureGen;
 
     // 軌跡描画用イベント（フックスレッドから発火する。購読側で UI スレッドへマーシャルすること）
     public event Action<int, int>? GestureStarted;
@@ -112,10 +115,50 @@ internal sealed class GestureEngine
             _encoder = new StrokeEncoder(Math.Max(1, _provider.Range));
             _encoder.Begin(x, y);
             _pending = true;
+            _gestureGen++;
             StartTimeoutLocked();
         }
         GestureStarted?.Invoke(x, y);
+        // 項目判定が未確定（コールド）なら、項目と分かり次第ドラッグへ転換する（down-while-held）。
+        // 同期では待たず、バックグラウンドの確定結果をコールバックで受ける。
+        if (ctx.ConfirmDragOnItem)
+        {
+            int gen = _gestureGen;
+            _provider.ConfirmDragAsync(x, y, isItem => OnDragConfirm(isItem, gen));
+        }
         return true; // DOWN を保留（飲み込む）
+    }
+
+    /// <summary>
+    /// コールド時に保留へ入った右DOWNが、後から「項目上」と確定したときの転換処理。
+    /// まだ保留中でストローク/ホイール/タイムアウトが始まっていなければ、ジェスチャーを取りやめて
+    /// 署名付き右DOWNを注入する。物理ボタンは押下継続中なので、続く物理移動・物理アップで
+    /// アプリ側の右ドラッグが成立する（UPは飲み込まず素通しさせる）。MGL の MG_Abort 経路と同方式。
+    /// </summary>
+    private void OnDragConfirm(bool isItem, int gen)
+    {
+        if (!isItem)
+            return; // 背景上 → ジェスチャー継続（現行どおり）
+        lock (_gate)
+        {
+            // 同じジェスチャーが保留中で、まだ入力が始まっていないときだけ転換する
+            // （ユーザーがすでにストローク/ホイールを始めていたら触らない）。
+            if (gen != _gestureGen || !_pending || _strokeWindowClosed || _wheelUsed
+                || (_encoder?.HasStrokes ?? false))
+                return;
+            _pending = false;
+            CancelTimeoutLocked();
+            _encoder?.Reset();
+        }
+        // 注入はフックスレッド外（このコールバックは ThreadPool 上）で行う。
+        InjectRightDown();
+        GestureEnded?.Invoke(); // 軌跡/コマンド表示を片付ける
+    }
+
+    private static void InjectRightDown()
+    {
+        var inputs = new[] { RightButton(InputNative.MOUSEEVENTF_RIGHTDOWN) };
+        InputNative.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<InputNative.INPUT>());
     }
 
     private void OnMove(int x, int y)

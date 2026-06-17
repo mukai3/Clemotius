@@ -11,7 +11,10 @@ internal sealed record GestureContext(
     GestureMatcher Matcher,
     bool Enabled,
     GestureAction? WheelUp,
-    GestureAction? WheelDown);
+    GestureAction? WheelDown,
+    // 項目判定が未確定（コールド）のまま保留に入ったことを示す。true のとき GestureEngine は
+    // 非同期で項目かどうかを確定し、項目なら右ドラッグへ転換する（down-while-held）。
+    bool ConfirmDragOnItem = false);
 
 /// <summary>
 /// ジェスチャー開始位置からプロファイル文脈を解決する。
@@ -20,6 +23,13 @@ internal sealed record GestureContext(
 internal interface IGestureContextProvider
 {
     GestureContext? Resolve(int startX, int startY);
+
+    /// <summary>
+    /// 右DOWN位置が項目（ファイル/フォルダ等）かどうかを非同期で確定し、結果をコールバックする。
+    /// コールバックはフックスレッド以外で呼ばれる。コールド時にジェスチャー保留へ入った後、
+    /// 項目と判明したらドラッグへ転換する（down-while-held）ために使う。
+    /// </summary>
+    void ConfirmDragAsync(int startX, int startY, Action<bool> onIsItem);
 
     /// <summary>
     /// マウス移動中の事前判定。カーソル下がプロファイル一致ウィンドウなら、項目（ファイル/フォルダ）

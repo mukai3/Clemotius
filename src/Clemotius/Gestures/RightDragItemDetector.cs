@@ -12,8 +12,9 @@ namespace Clemotius.Gestures;
 /// 設計原則（フックスレッドで無制限の同期クロスプロセス呼び出しをしない）に従い、MSAA 呼び出しは
 /// 必ずバックグラウンドで行い、フックスレッドは一切ブロックしない（ScrollBarDetector と同方式）。
 /// <see cref="Prime"/> をマウス移動中に呼んでキャッシュを温めておくことで、右DOWNの瞬間には
-/// すでに判定済みになっており、ブロックも取りこぼしもなく項目/背景を即答できる。万一キャッシュが
-/// 無い場合は <see cref="IsOverDraggableItem"/> は false（ジェスチャー優先）を返す（取りこぼし防止）。
+/// すでに判定済みになっており、<see cref="TryKnownItem"/> がブロックも取りこぼしもなく項目/背景を
+/// 即答できる。未確定（コールド）の場合は <see cref="ConfirmItemAsync"/> でバックグラウンド確定し、
+/// 項目と分かれば呼び出し側がドラッグへ転換する（down-while-held）。
 /// </summary>
 internal static class RightDragItemDetector
 {
@@ -41,19 +42,6 @@ internal static class RightDragItemDetector
     private static uint _probeLease;         // バックグラウンド判定のリース (0=空き、それ以外=開始tick)
     private static uint _lastProbeStartTick; // 直近のバックグラウンド判定起動時刻
 
-    /// <returns>項目（ファイル/フォルダ等）の上なら true。背景上・不明なら false（ジェスチャー優先）。</returns>
-    public static bool IsOverDraggableItem(int x, int y)
-    {
-        nint hwnd = WindowAt(x, y);
-        if (hwnd == 0)
-            return false; // 対象ウィンドウ無し＝項目でない（ジェスチャー優先）
-        if (Lookup(x, y, hwnd, ReadFreshMs) is bool cached)
-            return cached;
-        // 温まっていなければフックスレッドは待たず、次回以降のため起動だけして今回はジェスチャー優先。
-        KickProbe(x, y, hwnd, force: true);
-        return false;
-    }
-
     /// <summary>マウス移動中の事前判定。右DOWN前にキャッシュを温める。</summary>
     public static void Prime(int x, int y)
     {
@@ -63,6 +51,42 @@ internal static class RightDragItemDetector
         if (Lookup(x, y, hwnd, PrimeFreshMs) is not null)
             return; // 近傍・同一ウィンドウに十分新しい結果あり
         KickProbe(x, y, hwnd, force: false);
+    }
+
+    /// <summary>
+    /// キャッシュにある確定結果のみを返す（プローブは起動しない）。窓が無ければ確定で false、
+    /// 近傍に新しい結果が無ければ null（未確定＝コールド）。
+    /// </summary>
+    public static bool? TryKnownItem(int x, int y)
+    {
+        nint hwnd = WindowAt(x, y);
+        if (hwnd == 0)
+            return false;
+        return Lookup(x, y, hwnd, ReadFreshMs);
+    }
+
+    /// <summary>
+    /// 項目かどうかをバックグラウンドで確定し、結果をコールバックする（フックスレッドは待たない）。
+    /// コールバックは必ず1回、フックスレッド以外（ThreadPool）で呼ばれる。コールド時に
+    /// ジェスチャー保留へ入った後、項目と判明したらドラッグへ転換する（down-while-held）ために使う。
+    /// </summary>
+    public static void ConfirmItemAsync(int x, int y, Action<bool> onResult)
+    {
+        Task.Run(() =>
+        {
+            nint hwnd = WindowAt(x, y);
+            bool isItem;
+            if (hwnd == 0)
+                isItem = false;
+            else if (Lookup(x, y, hwnd, ReadFreshMs) is bool cached)
+                isItem = cached;
+            else
+            {
+                isItem = Probe(x, y, hwnd);
+                _cache = new CacheEntry(x, y, hwnd, isItem, (uint)Environment.TickCount);
+            }
+            onResult(isItem);
+        });
     }
 
     private static nint WindowAt(int x, int y)

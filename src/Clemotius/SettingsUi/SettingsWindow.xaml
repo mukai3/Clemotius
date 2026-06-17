@@ -18,6 +18,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -61,5 +62,27 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
         </ui:NavigationView>
+
+        <!--  即時適用の保存ステータス（空のときは折りたたむ）  -->
+        <Border
+            Grid.Row="2"
+            Padding="16,6"
+            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding StatusText}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock
+                HorizontalAlignment="Right"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="{Binding StatusText}" />
+        </Border>
     </Grid>
 </ui:FluentWindow>

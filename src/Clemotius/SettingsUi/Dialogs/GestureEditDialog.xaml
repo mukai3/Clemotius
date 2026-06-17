@@ -65,7 +65,11 @@
                     x:Name="ParamLabel"
                     VerticalAlignment="Center"
                     Text="キー" />
-                <dialogs:KeyCaptureBox x:Name="KeysBox" Grid.Column="1" />
+                <dialogs:KeyCaptureBox
+                    x:Name="KeysBox"
+                    Grid.Column="1"
+                    AutomationProperties.HelpText="欄をクリックして割り当てたいキーを押してください。Tab で次の項目へ移動できます。"
+                    AutomationProperties.Name="ショートカットキー" />
                 <ComboBox x:Name="CommandCombo" Grid.Column="1" />
                 <ComboBox
                     x:Name="PresetCombo"
@@ -92,12 +96,14 @@
                     MinWidth="90"
                     Appearance="Primary"
                     Click="OnOk"
-                    Content="OK" />
+                    Content="OK"
+                    IsDefault="True" />
                 <ui:Button
                     Grid.Column="4"
                     MinWidth="90"
                     Click="OnCancel"
-                    Content="キャンセル" />
+                    Content="キャンセル"
+                    IsCancel="True" />
             </Grid>
         </StackPanel>
     </Grid>

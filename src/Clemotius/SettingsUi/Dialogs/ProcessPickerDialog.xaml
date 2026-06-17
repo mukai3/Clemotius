@@ -80,12 +80,14 @@
                 MinWidth="90"
                 Appearance="Primary"
                 Click="OnOk"
-                Content="OK" />
+                Content="OK"
+                IsDefault="True" />
             <ui:Button
                 Grid.Column="3"
                 MinWidth="90"
                 Click="OnCancel"
-                Content="キャンセル" />
+                Content="キャンセル"
+                IsCancel="True" />
         </Grid>
     </Grid>
 </ui:FluentWindow>

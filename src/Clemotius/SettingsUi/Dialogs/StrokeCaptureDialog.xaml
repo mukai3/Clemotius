@@ -38,17 +38,20 @@
             x:Name="CanvasBorder"
             Grid.Row="2"
             Margin="16,0"
+            AutomationProperties.HelpText="左右どちらかのボタンでドラッグして軌跡を描くと、ストローク(U/D/L/R)が確定します。キーボードで入力する場合は前の画面のストローク欄に直接 U/D/L/R を入力できます。"
+            AutomationProperties.Name="ストローク描画エリア"
             Background="{DynamicResource ControlFillColorDefaultBrush}"
             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
             BorderThickness="1"
             CornerRadius="8"
+            Focusable="True"
             MouseDown="OnCanvasMouseDown"
             MouseMove="OnCanvasMouseMove"
             MouseUp="OnCanvasMouseUp">
             <Canvas x:Name="TrailCanvas" Background="Transparent" ClipToBounds="True">
                 <Polyline
                     x:Name="Trail"
-                    Stroke="RoyalBlue"
+                    Stroke="{DynamicResource TextFillColorPrimaryBrush}"
                     StrokeEndLineCap="Round"
                     StrokeLineJoin="Round"
                     StrokeStartLineCap="Round"
@@ -77,12 +80,14 @@
                 MinWidth="90"
                 Appearance="Primary"
                 Click="OnOk"
-                Content="OK" />
+                Content="OK"
+                IsDefault="True" />
             <ui:Button
                 Grid.Column="4"
                 MinWidth="90"
                 Click="OnCancel"
-                Content="キャンセル" />
+                Content="キャンセル"
+                IsCancel="True" />
         </Grid>
     </Grid>
 </ui:FluentWindow>

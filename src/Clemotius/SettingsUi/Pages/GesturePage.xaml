@@ -3,7 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:local="clr-namespace:Clemotius.SettingsUi"
     Title="ジェスチャー">
+    <Page.Resources>
+        <local:EmptyCountToVisibilityConverter x:Key="EmptyToVisible" />
+    </Page.Resources>
     <Grid Margin="24,16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -52,8 +56,10 @@
         <ListView
             x:Name="GestureList"
             Grid.Row="1"
+            ItemsSource="{Binding Gesture.Gestures}"
             MouseDoubleClick="OnEditGesture"
-            ItemsSource="{Binding Gesture.Gestures}">
+            SelectionChanged="OnGestureSelectionChanged"
+            SizeChanged="OnGestureListSizeChanged">
             <ListView.View>
                 <GridView>
                     <GridViewColumn
@@ -61,12 +67,33 @@
                         DisplayMemberBinding="{Binding Arrows}"
                         Header="ストローク" />
                     <GridViewColumn
+                        x:Name="ActionColumn"
                         Width="380"
-                        DisplayMemberBinding="{Binding Description}"
-                        Header="アクション" />
+                        Header="アクション">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    Text="{Binding Description}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip="{Binding Description}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
+
+        <!--  一覧が空のときの案内（リストには重ねず最前面・ヒットテスト無効）  -->
+        <TextBlock
+            Grid.Row="1"
+            Margin="12,16,12,0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            IsHitTestVisible="False"
+            Text="ジェスチャーはまだ登録されていません。下の「追加」から登録できます。"
+            TextWrapping="Wrap"
+            Visibility="{Binding Gesture.Gestures.Count, Converter={StaticResource EmptyToVisible}}" />
 
         <StackPanel
             Grid.Row="2"
@@ -77,10 +104,16 @@
                 Click="OnAddGesture"
                 Content="追加" />
             <ui:Button
+                x:Name="EditGestureButton"
                 Margin="0,0,8,0"
                 Click="OnEditGesture"
-                Content="編集" />
-            <ui:Button Click="OnRemoveGesture" Content="削除" />
+                Content="編集"
+                IsEnabled="False" />
+            <ui:Button
+                x:Name="RemoveGestureButton"
+                Click="OnRemoveGesture"
+                Content="削除"
+                IsEnabled="False" />
         </StackPanel>
 
         <!--  右ボタン + ホイール  -->

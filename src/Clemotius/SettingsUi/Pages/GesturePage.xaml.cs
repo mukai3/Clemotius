@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Clemotius.SettingsUi.Dialogs;
 
@@ -109,6 +110,23 @@ public partial class GesturePage
     {
         if (GestureList.SelectedIndex >= 0)
             Vm?.RemoveGestureAt(GestureList.SelectedIndex);
+    }
+
+    /// <summary>選択行が無いときは編集/削除を無効化する（押しても無反応になるのを防ぐ）。</summary>
+    private void OnGestureSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        bool hasSelection = GestureList.SelectedIndex >= 0;
+        EditGestureButton.IsEnabled = hasSelection;
+        RemoveGestureButton.IsEnabled = hasSelection;
+    }
+
+    /// <summary>アクション列をリスト幅に追従させる（固定幅で見切れ/横スクロールするのを防ぐ）。</summary>
+    private void OnGestureListSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // ストローク列(120) + スクロールバー/余白の見込み分を差し引いた残り幅をアクション列へ。
+        double width = GestureList.ActualWidth - 120 - 28;
+        if (width > 80)
+            ActionColumn.Width = width;
     }
 
     // ── 右ボタン + ホイール ──

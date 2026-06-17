@@ -47,10 +47,18 @@ internal sealed class KeyCaptureBox : System.Windows.Controls.TextBox
 
     protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
     {
-        e.Handled = true; // Tab/矢印含めすべてキャプチャ対象にする
-
         // Alt 併用時は実キーが SystemKey 側に入る
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var modifiers = Keyboard.Modifiers;
+
+        // 修飾なしの Tab / Shift+Tab はキャプチャせずフォーカス移動に使う(欄から抜けられるように)。
+        // Esc もキャプチャせずダイアログのキャンセル(IsCancel)へ通す。これらは Handled にしない。
+        // Ctrl+Tab 等、修飾キー併用の組み合わせは従来どおりキャプチャ対象にする。
+        bool bareTab = key == Key.Tab && (modifiers & ~ModifierKeys.Shift) == ModifierKeys.None;
+        if (bareTab || key == Key.Escape)
+            return;
+
+        e.Handled = true; // 上記以外はすべてキャプチャ対象にする
 
         // 修飾キー単独の押下は主キーとして採用しない
         if (key is Key.LeftCtrl or Key.RightCtrl

@@ -18,7 +18,7 @@
                 Margin="0,0,0,12"
                 FontSize="16"
                 FontWeight="SemiBold"
-                Text="トレイ" />
+                Text="通知領域(トレイ)" />
             <ui:ToggleSwitch
                 Margin="0,0,0,8"
                 Content="タスクトレイにアイコンを表示する"
@@ -32,7 +32,7 @@
                 Margin="0,16,0,12"
                 FontSize="16"
                 FontWeight="SemiBold"
-                Text="ジェスチャーの詳細" />
+                Text="ジェスチャー認識" />
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -83,11 +83,13 @@
                 Margin="0,16,0,12"
                 FontSize="16"
                 FontWeight="SemiBold"
-                Text="軌跡 / コマンド表示" />
+                Text="軌跡とコマンド表示" />
             <ui:ToggleSwitch
                 Margin="0,0,0,8"
                 Content="ジェスチャーの軌跡/コマンドを表示する"
                 IsChecked="{Binding General.DrawStroke}" />
+            <!--  軌跡表示が OFF のときは下位設定を無効化して、効かないことを視覚的に伝える  -->
+            <StackPanel IsEnabled="{Binding General.DrawStroke}">
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -122,7 +124,7 @@
                     <ColumnDefinition Width="120" />
                 </Grid.ColumnDefinitions>
                 <TextBlock VerticalAlignment="Center" Text="色 (有効 / 無効)" />
-                <Button
+                <ui:Button
                     Grid.Column="1"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
@@ -137,8 +139,8 @@
                             CornerRadius="3" />
                         <TextBlock Text="有効色" />
                     </StackPanel>
-                </Button>
-                <Button
+                </ui:Button>
+                <ui:Button
                     Grid.Column="3"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
@@ -153,8 +155,9 @@
                             CornerRadius="3" />
                         <TextBlock Text="無効色" />
                     </StackPanel>
-                </Button>
+                </ui:Button>
             </Grid>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

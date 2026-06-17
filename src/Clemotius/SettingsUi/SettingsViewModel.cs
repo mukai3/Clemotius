@@ -17,9 +17,13 @@ internal sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly ClemotiusConfig _original;
     private readonly DispatcherTimer _debounce;
+    private readonly DispatcherTimer _statusClear;
 
     /// <summary>デバウンス確定時に再構築済みの設定を通知する（ConfigStore.Save へ接続）。</summary>
     public event Action<ClemotiusConfig>? Applied;
+
+    /// <summary>保存状態の表示文言（即時適用のフィードバック）。空文字なら非表示。</summary>
+    [ObservableProperty] private string _statusText = "";
 
     // ── 拡張スクロール: 修飾キー6種 ──
     public IReadOnlyList<ChoiceSlotViewModel> ModifierSlots { get; }
@@ -44,6 +48,10 @@ internal sealed partial class SettingsViewModel : ObservableObject
         _original = config;
         _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _debounce.Tick += (_, _) => Flush();
+
+        // 「保存しました」を数秒後に消すためのタイマー。
+        _statusClear = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _statusClear.Tick += (_, _) => { _statusClear.Stop(); StatusText = ""; };
 
         var ms = config.Scroll.ModifierScroll;
         ModifierSlots = new[]
@@ -85,6 +93,8 @@ internal sealed partial class SettingsViewModel : ObservableObject
     /// <summary>編集項目が変化したときに呼ばれる。300ms 静止後に保存される。</summary>
     public void NotifyChanged()
     {
+        _statusClear.Stop();
+        StatusText = "変更を保存中…";
         _debounce.Stop();
         _debounce.Start();
     }
@@ -100,6 +110,9 @@ internal sealed partial class SettingsViewModel : ObservableObject
     {
         _debounce.Stop();
         Applied?.Invoke(Build());
+        StatusText = "保存しました";
+        _statusClear.Stop();
+        _statusClear.Start();
     }
 
     /// <summary>現在の編集状態から設定を再構築する（プロファイルはフェーズ3で追加）。</summary>

@@ -1,0 +1,53 @@
+<Page
+    x:Class="Clemotius.SettingsUi.Pages.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="バージョン情報">
+    <ScrollViewer
+        Padding="24,16"
+        Background="Transparent"
+        VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="640">
+
+            <TextBlock FontSize="28" FontWeight="SemiBold">
+                <Run Text="Clemotius" />
+                <Run
+                    FontSize="15"
+                    FontWeight="Normal"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text=" -KazaguruMouse Alternative-" />
+            </TextBlock>
+            <TextBlock
+                Margin="0,4,0,0"
+                FontSize="16"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="クレマチウス — Windows 向けマウスジェスチャーユーティリティ" />
+            <TextBlock
+                x:Name="VersionText"
+                Margin="0,2,0,0"
+                FontSize="16" />
+
+            <TextBlock
+                Margin="0,16,0,0"
+                TextWrapping="Wrap"
+                Text="更新が終了したマウスジェスチャーツールにインスパイアされ、Windows 10/11 向けに .NET (C#) で再実装した個人用プロジェクトです。" />
+
+            <TextBlock Margin="0,16,0,0">
+                <Run Text="Source code: " />
+                <Hyperlink
+                    NavigateUri="https://github.com/mukai3/Clemotius"
+                    RequestNavigate="OnRequestNavigate">https://github.com/mukai3/Clemotius</Hyperlink>
+            </TextBlock>
+            <TextBlock Margin="0,4,0,0" Text="Developer: mukai3" />
+
+            <TextBlock
+                Margin="0,16,0,0"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="Copyright © 2026 mukai3" />
+            <TextBlock
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="開発中ベータバージョン (Private Beta)" />
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

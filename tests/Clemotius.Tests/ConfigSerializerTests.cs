@@ -38,6 +38,17 @@ public class ConfigSerializerTests
     }
 
     [Fact]
+    public void LegacyCloseCommand_MapsToBrowserClose()
+    {
+        // 旧名 "Close" で保存された appcommand は BrowserClose として読める（コマンド名変更の互換）
+        var json = ConfigSerializer.Serialize(WithGesture(
+            new GestureBinding("DR", new AppCommandAction(AppCommand.BrowserClose))))
+            .Replace("BrowserClose", "Close");
+        var cmd = Assert.IsType<AppCommandAction>(FirstAction(ConfigSerializer.Deserialize(json)));
+        Assert.Equal(AppCommand.BrowserClose, cmd.Command);
+    }
+
+    [Fact]
     public void KeyActionWithLabel_RoundTrips()
     {
         var json = ConfigSerializer.Serialize(WithGesture(
@@ -110,7 +121,7 @@ public class ConfigSerializerTests
         Assert.Equal(AppCommand.BrowserForward, Assert.IsType<AppCommandAction>(ActionOf("R")).Command);
         Assert.Equal("Ctrl+Home", Assert.IsType<KeyAction>(ActionOf("RU")).Stroke.ToString());
         Assert.Equal("Ctrl+End", Assert.IsType<KeyAction>(ActionOf("RD")).Stroke.ToString());
-        Assert.Equal(AppCommand.Close, Assert.IsType<AppCommandAction>(ActionOf("DR")).Command);
+        Assert.Equal(AppCommand.BrowserClose, Assert.IsType<AppCommandAction>(ActionOf("DR")).Command);
         Assert.Equal("Ctrl+T", Assert.IsType<KeyAction>(ActionOf("LR")).Stroke.ToString());
         Assert.Equal("Ctrl+Shift+T", Assert.IsType<KeyAction>(ActionOf("DL")).Stroke.ToString());
         Assert.Equal("Ctrl+F5", Assert.IsType<KeyAction>(ActionOf("UDUD")).Stroke.ToString());

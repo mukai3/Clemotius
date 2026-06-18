@@ -120,15 +120,6 @@ public partial class GesturePage
         RemoveGestureButton.IsEnabled = hasSelection;
     }
 
-    /// <summary>アクション列をリスト幅に追従させる（固定幅で見切れ/横スクロールするのを防ぐ）。</summary>
-    private void OnGestureListSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        // ストローク列(120) + スクロールバー/余白の見込み分を差し引いた残り幅をアクション列へ。
-        double width = GestureList.ActualWidth - 120 - 28;
-        if (width > 80)
-            ActionColumn.Width = width;
-    }
-
     // ── 右ボタン + ホイール ──
 
     private void OnEditWheelUp(object sender, RoutedEventArgs e) => EditWheel(up: true);

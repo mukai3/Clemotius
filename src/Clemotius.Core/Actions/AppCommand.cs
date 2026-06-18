@@ -20,7 +20,8 @@ public enum AppCommand
     MediaPreviousTrack = 12,
     MediaStop = 13,
     MediaPlayPause = 14,
-    // ウィンドウ/タブを閉じる。Win32 に APPCOMMAND_BROWSER_CLOSE は無いため
+    // ブラウザのタブを閉じる。Win32 に APPCOMMAND_BROWSER_CLOSE は無いため
     // 汎用の APPCOMMAND_CLOSE(31) を使う（ブラウザは WM_APPCOMMAND の Close を処理する）。
-    Close = 31,
+    // 表示名は他の Browser* コマンドに合わせて BrowserClose とする（旧名 Close は読込時に互換変換）。
+    BrowserClose = 31,
 }

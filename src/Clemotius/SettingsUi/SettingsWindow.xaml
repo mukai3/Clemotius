@@ -18,7 +18,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -61,14 +60,33 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="バージョン情報" TargetPageType="{x:Type pages:AboutPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Info24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
 
-        <!--  即時適用の保存ステータス（空のときは折りたたむ）  -->
+        <!--  即時適用の保存ステータス（フローティング: レイアウトを押し上げず、コンテンツ右下に重ねる）  -->
         <Border
-            Grid.Row="2"
-            Padding="16,6"
-            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-            BorderThickness="0,1,0,0">
+            Grid.Row="1"
+            Margin="0,0,16,16"
+            Padding="14,8"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="12"
+                    Opacity="0.25"
+                    ShadowDepth="2"
+                    Color="Black" />
+            </Border.Effect>
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Visible" />
@@ -80,7 +98,6 @@
                 </Style>
             </Border.Style>
             <TextBlock
-                HorizontalAlignment="Right"
                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                 Text="{Binding StatusText}" />
         </Border>

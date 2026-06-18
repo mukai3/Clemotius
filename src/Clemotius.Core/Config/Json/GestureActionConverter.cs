@@ -33,6 +33,9 @@ public sealed class GestureActionConverter : JsonConverter<GestureAction>
             case "appcommand":
                 string cmd = root.GetProperty("command").GetString()
                     ?? throw new JsonException("appcommand アクションに 'command' がありません。");
+                // 旧名 "Close" → BrowserClose の互換（コマンド名変更前に保存された設定を壊さない）
+                if (cmd.Equals("Close", StringComparison.OrdinalIgnoreCase))
+                    return new AppCommandAction(AppCommand.BrowserClose);
                 if (!Enum.TryParse<AppCommand>(cmd, ignoreCase: true, out var command))
                     throw new JsonException($"未知の appcommand: '{cmd}'。");
                 return new AppCommandAction(command);

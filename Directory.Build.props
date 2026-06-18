@@ -5,5 +5,13 @@
     <PlatformTarget>x64</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- バージョンは git タグ(v0.3.4 等)から MinVer が自動採番する。
+         リリースはタグを打つだけでよく、手動でのバージョン書き換えは不要。 -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ビルド時のみ使用(成果物の依存には流さない) -->
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
+  </ItemGroup>
 </Project>

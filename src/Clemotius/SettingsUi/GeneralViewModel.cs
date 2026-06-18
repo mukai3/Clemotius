@@ -13,8 +13,11 @@ internal sealed partial class GeneralViewModel : ObservableObject
     private readonly Action _changed;
     private bool _initialized;
 
-    [ObservableProperty] private bool _showTrayIcon;
+    [ObservableProperty] private int _themeIndex; // 0=システム連動, 1=ライト, 2=ダーク
     [ObservableProperty] private int _range;
+
+    /// <summary>テーマの設定値("system"/"light"/"dark")。ThemeIndex から導出する。</summary>
+    public string Theme => ThemeIndex switch { 1 => "light", 2 => "dark", _ => "system" };
     [ObservableProperty] private int _timeoutMs;
     [ObservableProperty] private int _pushHoldTimeMs;
     [ObservableProperty] private bool _drawStroke;
@@ -26,7 +29,7 @@ internal sealed partial class GeneralViewModel : ObservableObject
     public GeneralViewModel(ClemotiusConfig config, Action changed)
     {
         _changed = changed;
-        _showTrayIcon = config.Tray.ShowTrayIcon;
+        _themeIndex = config.Theme switch { "light" => 1, "dark" => 2, _ => 0 };
         _range = Math.Clamp(config.Gesture.Range, 1, 100);
         _timeoutMs = Math.Clamp(config.Gesture.TimeoutMs, 0, 10000);
         _pushHoldTimeMs = Math.Clamp(config.Gesture.PushHoldTimeMs, 0, 5000);

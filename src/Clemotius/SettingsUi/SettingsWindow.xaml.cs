@@ -3,7 +3,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Clemotius.Core.Config;
-using Wpf.Ui.Appearance;
 
 namespace Clemotius.SettingsUi;
 
@@ -23,8 +22,18 @@ public partial class SettingsWindow
 
         InitializeComponent();
 
-        // OS のライト/ダーク切替に追従する
-        SystemThemeWatcher.Watch(this);
+        // 設定のテーマを適用（system のときだけ OS のライト/ダーク切替に追従）。
+        // テーマ選択の変更は即時反映する。
+        ThemeApplier.Apply(ViewModel.General.Theme, this);
+        // 構築直後の初回適用では一部の DynamicResource（リスト行の文字色など）が旧テーマの
+        // ままになり、ダーク直接起動時に黒文字で見えなくなることがある。ロード後に色だけ
+        // 再適用して確実にテーマへ追従させる（テーマ切替で直るのと同じ再適用）。
+        Loaded += (_, _) => ThemeApplier.ApplyColors(ViewModel.General.Theme);
+        ViewModel.General.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(GeneralViewModel.ThemeIndex))
+                ThemeApplier.Apply(ViewModel.General.Theme, this);
+        };
 
         // ナビゲーションのページ生成（ページは都度 new でよい軽さなので DataContext を引き継ぐ）
         RootNavigation.Loaded += (_, _) => RootNavigation.Navigate(typeof(Pages.GesturePage));

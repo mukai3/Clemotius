@@ -31,7 +31,7 @@ public sealed record ClemotiusConfig
             new GestureBinding("R", new AppCommandAction(AppCommand.BrowserForward)),   // → 進む
             new GestureBinding("RU", new KeyAction(KeyStrokeParser.Parse("Ctrl+Home"))), // →↑ 先頭へ
             new GestureBinding("RD", new KeyAction(KeyStrokeParser.Parse("Ctrl+End"))),  // →↓ 末尾へ
-            new GestureBinding("DR", new CloseAction()),                                 // ↓→ タブを閉じる
+            new GestureBinding("DR", new AppCommandAction(AppCommand.Close)),            // ↓→ タブを閉じる(APPCOMMAND_CLOSE。CloseAction=WM_CLOSEだとウィンドウごと閉じる)
             new GestureBinding("LR", new KeyAction(KeyStrokeParser.Parse("Ctrl+T"), "Chrome: 新規タブを開く (Ctrl+T)")),       // ←→
             new GestureBinding("DL", new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+T"), "Chrome: 最近閉じたタブを開く (Ctrl+Shift+T)")), // ↓←
             new GestureBinding("UDUD", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"), "Chrome: 完全再読み込み (Ctrl+F5)")),    // ↑↓↑↓

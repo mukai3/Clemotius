@@ -4,6 +4,5 @@ namespace Clemotius.Core.Config;
 public sealed record TraySettings
 {
     public bool ShowTrayIcon { get; init; } = true;
-    public bool ShowBalloonTip { get; init; }
     public int MenuStyle { get; init; } = 2;
 }

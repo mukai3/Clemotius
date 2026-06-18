@@ -159,7 +159,6 @@ internal sealed partial class SettingsViewModel : ObservableObject
         var tray = _original.Tray with
         {
             ShowTrayIcon = General.ShowTrayIcon,
-            ShowBalloonTip = General.ShowBalloonTip,
         };
 
         return _original with

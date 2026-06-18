@@ -14,7 +14,6 @@ internal sealed partial class GeneralViewModel : ObservableObject
     private bool _initialized;
 
     [ObservableProperty] private bool _showTrayIcon;
-    [ObservableProperty] private bool _showBalloonTip;
     [ObservableProperty] private int _range;
     [ObservableProperty] private int _timeoutMs;
     [ObservableProperty] private int _pushHoldTimeMs;
@@ -28,7 +27,6 @@ internal sealed partial class GeneralViewModel : ObservableObject
     {
         _changed = changed;
         _showTrayIcon = config.Tray.ShowTrayIcon;
-        _showBalloonTip = config.Tray.ShowBalloonTip;
         _range = Math.Clamp(config.Gesture.Range, 1, 100);
         _timeoutMs = Math.Clamp(config.Gesture.TimeoutMs, 0, 10000);
         _pushHoldTimeMs = Math.Clamp(config.Gesture.PushHoldTimeMs, 0, 5000);

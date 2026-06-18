@@ -23,10 +23,6 @@
                 Margin="0,0,0,8"
                 Content="タスクトレイにアイコンを表示する"
                 IsChecked="{Binding General.ShowTrayIcon}" />
-            <ui:ToggleSwitch
-                Margin="0,0,0,8"
-                Content="バルーン通知を表示する"
-                IsChecked="{Binding General.ShowBalloonTip}" />
 
             <TextBlock
                 Margin="0,16,0,12"

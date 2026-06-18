@@ -1,22 +1,33 @@
 /// <summary>
-/// クレマウチス（クレマチス花）アイコン生成ツール。
-/// 16/32/48/256px の多解像度 .ico ファイルを出力する。
+/// Clemotius（クレマチス花＝風車モチーフ）アイコン生成ツール。
+/// 16/20/24/32/48/256px の多解像度 .ico ファイルを出力する。
+///
+/// 小サイズ(タスクトレイ)での視認性を最優先に、
+///  - 塗りつぶしの紫円盤を土台にして任意の地色(明/暗タスクバー)でも輪郭が出るようにし、
+///  - その上に白い風車状の花びらを高コントラストで重ね、
+///  - 小サイズでは要素を減らしてベタ塗りで描く（グラデ/葉脈/背面花びらを省く）
+/// という方針で描画する。
 /// </summary>
 
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
+// 既定の出力先: リポジトリ内 src/Clemotius/clemotius.ico
+// (BaseDirectory = tools/icongen/bin/Debug/<tfm>/ なので 5 階層上がリポジトリルート)
 var outputPath = args.Length > 0 ? args[0]
-    : Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Clemoutis", "clemoutis.ico");
+    : Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Clemotius", "clemotius.ico");
 
 outputPath = Path.GetFullPath(outputPath);
 
-var sizes   = new[] { 16, 32, 48, 256 };
+var sizes   = new[] { 16, 20, 24, 32, 48, 256 };
 var bitmaps = sizes.Select(CreateClematisBitmap).ToList();
 
 SaveAsIco(bitmaps, outputPath);
 Console.WriteLine($"Icon saved: {outputPath}");
+
+// プレビュー用に各サイズの PNG も temp へ出力（リポジトリは汚さない）。
+SavePreview(sizes, bitmaps);
 
 foreach (var b in bitmaps) b.Dispose();
 
@@ -35,56 +46,44 @@ static Bitmap CreateClematisBitmap(int size)
 
     float cx = size / 2f;
     float cy = size / 2f;
+    bool  small = size < 32;   // 16/20/24px は細部(雄しべ/筋)を省く
 
-    // 後ろ層：4枚・45° オフセット・やや小さく・少し暗め
-    for (int i = 0; i < 4; i++)
-        DrawPetal(g, cx, cy, i * 90f + 45f,
-            length    : size * 0.42f,
-            width     : size * 0.265f,
-            innerColor: Color.FromArgb(170, 210, 190, 240),  // 薄ラベンダー
-            outerColor: Color.FromArgb(195, 130,  85, 200),  // 中紫
-            veinAlpha : 0);
+    // 実物のクレマチス(青紫・幅広で先の尖った8枚・中央に白い雄しべの放射と黄緑の芯)に寄せる。
+    // 背景の円盤は持たず、花そのものでアイコンを構成する。花びらは太め・重なりあり。
+    const int petals = 8;
+    float length = size * 0.47f;
+    float width  = size * 0.34f;
 
-    // 前層：4枚・メイン
-    for (int i = 0; i < 4; i++)
-        DrawPetal(g, cx, cy, i * 90f,
-            length    : size * 0.462f,
-            width     : size * 0.285f,
-            innerColor: Color.FromArgb(220, 245, 235, 255),  // ほぼ白ラベンダー
-            outerColor: Color.FromArgb(245, 150, 100, 215),  // 明るい薄紫
-            veinAlpha : size >= 20 ? 50 : 0);
+    for (int i = 0; i < petals; i++)
+        DrawPetal(g, cx, cy, i * (360f / petals), length, width, small);
 
-    // 中心：白い小円（かざぐるマウスと同様）
-    float cR = size * 0.10f;
-    using var wb = new SolidBrush(Color.FromArgb(250, 255, 255, 255));
-    g.FillEllipse(wb, cx - cR, cy - cR, cR * 2, cR * 2);
+    DrawCenter(g, cx, cy, size, small);
 
     return bmp;
 }
 
 /// <summary>
-/// 左右非対称ベジェ曲線による花びらを描画する。
-/// 非対称にすることで風車ブレードのような動きのある形状になる。
+/// 幅広で先の尖ったクレマチスの花びらを描画する。
+/// 根元(花の中心側)を淡く、先端へ向け青紫を濃くした線形グラデで実物の色味に寄せ、
+/// 重なる花びらの境界を出すための淡い縁取りと、中央の明るい筋(クレマチス特有のバー)を入れる。
 /// </summary>
 static void DrawPetal(Graphics g, float cx, float cy, float angleDeg,
-    float length, float width, Color innerColor, Color outerColor, int veinAlpha)
+    float length, float width, bool small)
 {
     float hw = width / 2f;
 
-    // ローカル座標（上方向が先端）で非対称花びらを定義
-    // 左辺：外側に大きく膨らむ（かざぐるマウス風の動きを演出）
-    // 右辺：控えめなカーブ
+    // ローカル座標(上方向が先端)。広い腹→尖った先端の対称な花びら。
     using var path = new GraphicsPath();
     path.AddBezier(
-        new PointF(0f,           0f),
-        new PointF(-hw * 1.15f, -length * 0.30f),
-        new PointF(-hw * 1.10f, -length * 0.65f),
-        new PointF(0f,          -length));
+        new PointF(0f,   0f),
+        new PointF(-hw, -length * 0.30f),
+        new PointF(-hw, -length * 0.72f),
+        new PointF(0f,  -length));
     path.AddBezier(
-        new PointF(0f,          -length),
-        new PointF( hw * 0.75f, -length * 0.62f),
-        new PointF( hw * 0.70f, -length * 0.28f),
-        new PointF(0f,           0f));
+        new PointF(0f,  -length),
+        new PointF( hw, -length * 0.72f),
+        new PointF( hw, -length * 0.30f),
+        new PointF(0f,   0f));
     path.CloseFigure();
 
     using var matrix = new Matrix();
@@ -92,28 +91,122 @@ static void DrawPetal(Graphics g, float cx, float cy, float angleDeg,
     matrix.Rotate(angleDeg);
     path.Transform(matrix);
 
-    // PathGradientBrush：中心（根元）から外側（先端周辺）へグラデーション
-    using var pgb = new PathGradientBrush(path)
-    {
-        CenterColor    = innerColor,
-        SurroundColors = new[] { outerColor },
-        FocusScales    = new PointF(0f, 0.20f),
-    };
-    g.FillPath(pgb, path);
+    float ar = angleDeg * MathF.PI / 180f;
+    var basePt = new PointF(cx, cy);
+    var tipPt  = new PointF(cx + length * MathF.Sin(ar), cy - length * MathF.Cos(ar));
 
-    // 中心の白い葉脈
-    if (veinAlpha > 0 && length > 8)
+    using (var lgb = new LinearGradientBrush(basePt, tipPt,
+        Color.FromArgb(255, 0xC4, 0xB0, 0xEE),   // 根元: 淡い藤紫
+        Color.FromArgb(255, 0x7A, 0x4F, 0xCC)))  // 先端: 紫
     {
-        float ar  = angleDeg * MathF.PI / 180f;
-        float tx  = cx + length * 0.88f * MathF.Sin(ar);
-        float ty  = cy - length * 0.88f * MathF.Cos(ar);
-        float vW  = MathF.Max(0.5f, width * 0.075f);
-        using var vp = new Pen(Color.FromArgb(veinAlpha, 255, 255, 255), vW)
+        g.FillPath(lgb, path);
+    }
+
+    // 重なる花びらの境界(実物も花びら縁が見える)
+    float pw = MathF.Max(0.75f, length * 0.03f);
+    using (var pen = new Pen(Color.FromArgb(small ? 150 : 130, 0x4A, 0x36, 0x9E), pw))
+    {
+        g.DrawPath(pen, path);
+    }
+
+    // 中央の明るい筋(クレマチスのバー)。小サイズでは省く。
+    if (!small)
+    {
+        float vw = MathF.Max(1f, width * 0.16f);
+        var vTip = new PointF(cx + length * 0.80f * MathF.Sin(ar),
+                              cy - length * 0.80f * MathF.Cos(ar));
+        using var vpen = new Pen(Color.FromArgb(140, 0xDD, 0xE3, 0xF8), vw)
         {
             StartCap = LineCap.Round,
             EndCap   = LineCap.Round,
         };
-        g.DrawLine(vp, cx, cy, tx, ty);
+        g.DrawLine(vpen, cx, cy, vTip.X, vTip.Y);
+    }
+}
+
+/// <summary>
+/// 花の中心。大サイズでは白い雄しべの放射(スパイダー状)＋先端の黄緑の葯＋黄緑の芯、
+/// 小サイズでは淡黄の小円のみ。
+/// </summary>
+static void DrawCenter(Graphics g, float cx, float cy, int size, bool small)
+{
+    if (small)
+    {
+        float r = MathF.Max(1.4f, size * 0.12f);
+        using var yb = new SolidBrush(Color.FromArgb(255, 0xEC, 0xE7, 0x9A)); // 淡黄
+        g.FillEllipse(yb, cx - r, cy - r, r * 2, r * 2);
+        return;
+    }
+
+    const int filaments = 22;
+    float r1 = size * 0.05f;
+    float r2 = size * 0.17f;
+    float fw = MathF.Max(0.8f, size * 0.012f);
+    float ad = MathF.Max(0.8f, size * 0.018f);
+    using var fpen = new Pen(Color.FromArgb(235, 0xFB, 0xFA, 0xEC), fw)
+    {
+        StartCap = LineCap.Round,
+        EndCap   = LineCap.Round,
+    };
+    using var anther = new SolidBrush(Color.FromArgb(255, 0xC9, 0xC7, 0x4F)); // 黄緑の葯
+    for (int i = 0; i < filaments; i++)
+    {
+        float a  = i * (2f * MathF.PI / filaments) + 0.2f;
+        float x1 = cx + r1 * MathF.Cos(a), y1 = cy + r1 * MathF.Sin(a);
+        float x2 = cx + r2 * MathF.Cos(a), y2 = cy + r2 * MathF.Sin(a);
+        g.DrawLine(fpen, x1, y1, x2, y2);
+        g.FillEllipse(anther, x2 - ad, y2 - ad, ad * 2, ad * 2);
+    }
+
+    float cr = size * 0.08f;
+    using var core = new SolidBrush(Color.FromArgb(255, 0xCF, 0xCE, 0x5C)); // 黄緑の芯
+    g.FillEllipse(core, cx - cr, cy - cr, cr * 2, cr * 2);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// プレビュー出力（temp）。各サイズの等倍 PNG と、確認しやすい拡大montageを書き出す。
+// ─────────────────────────────────────────────────────────────────────────────
+
+static void SavePreview(int[] sizes, List<Bitmap> bitmaps)
+{
+    try
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "clemotius-icon-preview");
+        Directory.CreateDirectory(dir);
+        for (int i = 0; i < sizes.Length; i++)
+            bitmaps[i].Save(Path.Combine(dir, $"icon-{sizes[i]}.png"), ImageFormat.Png);
+
+        // 小サイズを実寸とチェッカー背景で並べた確認用montage（明暗どちらでも見えるか確認用）
+        int[] preview = { 16, 20, 24, 32, 48 };
+        int pad = 16, cell = 64;
+        using var montage = new Bitmap(pad + preview.Length * (cell + pad), cell + pad * 3);
+        using (var g = Graphics.FromImage(montage))
+        {
+            g.Clear(Color.FromArgb(255, 240, 240, 240));
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            // 上半分=明背景, 下帯=暗背景の2行で確認できるよう、各セルに明暗の地を敷く
+            for (int i = 0; i < preview.Length; i++)
+            {
+                int idx = Array.IndexOf(sizes, preview[i]);
+                if (idx < 0) continue;
+                int x = pad + i * (cell + pad);
+                // 明背景セル
+                g.FillRectangle(Brushes.White, x, pad, cell, cell / 2);
+                // 暗背景セル
+                using var dark = new SolidBrush(Color.FromArgb(255, 32, 32, 32));
+                g.FillRectangle(dark, x, pad + cell / 2, cell, cell / 2);
+                // 実寸で中央に配置（明・暗それぞれ）
+                int s = preview[i];
+                g.DrawImage(bitmaps[idx], x + (cell - s) / 2, pad + (cell / 2 - s) / 2, s, s);
+                g.DrawImage(bitmaps[idx], x + (cell - s) / 2, pad + cell / 2 + (cell / 2 - s) / 2, s, s);
+            }
+        }
+        montage.Save(Path.Combine(dir, "montage.png"), ImageFormat.Png);
+        Console.WriteLine($"Preview saved: {dir}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"(preview skipped: {ex.Message})");
     }
 }
 

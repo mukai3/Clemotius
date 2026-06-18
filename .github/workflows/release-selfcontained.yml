@@ -46,16 +46,17 @@ jobs:
             -p:DebugType=none -p:Version=$version `
             -o publish-sc
 
-      - name: Name the single-file artifact
+      - name: Package (zip)
         shell: pwsh
         run: |
-          $asset = "Clemotius-${{ inputs.tag }}-win-x64-selfcontained.exe"
-          Copy-Item publish-sc/Clemotius.exe $asset
-          "ASSET=$asset" | Out-File -FilePath $env:GITHUB_ENV -Append
+          # 通常版(release.yml)と同様に zip 圧縮して配布する。単一 exe を zip に収める。
+          Compress-Archive -Path publish-sc/Clemotius.exe `
+            -DestinationPath "Clemotius-${{ inputs.tag }}-win-x64-selfcontained.zip"
 
       - name: Upload to existing Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ inputs.tag }}" "$env:ASSET" --clobber
+          gh release upload "${{ inputs.tag }}" `
+            "Clemotius-${{ inputs.tag }}-win-x64-selfcontained.zip" --clobber

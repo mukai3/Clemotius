@@ -38,10 +38,10 @@ public sealed record ClemotiusConfig
             new GestureBinding("DL", new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+T"), "Chrome: 最近閉じたタブを開く (Ctrl+Shift+T)")), // ↓←
             new GestureBinding("UDUD", new KeyAction(KeyStrokeParser.Parse("Ctrl+F5"), "Chrome: 完全再読み込み (Ctrl+F5)")),    // ↑↓↑↓
             new GestureBinding("UD", new AppCommandAction(AppCommand.BrowserRefresh)),   // ↑↓ 再読み込み
+            // 右ボタン+ホイール（ユーザー ini の R+WU / R+WD 由来）。ストロークと同じ一覧に WU/WD で保持する。
+            new GestureBinding(WheelStrokes.Up, new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+Tab"))),   // ホイール↑ 前のタブ
+            new GestureBinding(WheelStrokes.Down, new KeyAction(KeyStrokeParser.Parse("Ctrl+Tab"))),       // ホイール↓ 次のタブ
         },
-        // ユーザー ini の R+WU / R+WD（右ボタン+ホイール）由来
-        WheelUp = new KeyAction(KeyStrokeParser.Parse("Ctrl+Shift+Tab")),   // 前のタブ
-        WheelDown = new KeyAction(KeyStrokeParser.Parse("Ctrl+Tab")),       // 次のタブ
     };
 
     /// <summary>

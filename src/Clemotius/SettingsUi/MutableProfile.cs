@@ -11,9 +11,8 @@ internal sealed class MutableProfile
     public string ProcessPattern { get; set; } = "";
     public bool GesturesEnabled { get; set; } = true;
 
+    /// <summary>ストロークと右ボタン+ホイール上/下を区別なく保持する（Trigger で種別を持つ）。</summary>
     public List<GestureBinding> Gestures { get; } = new();
-    public GestureAction? WheelUp { get; set; }
-    public GestureAction? WheelDown { get; set; }
 
     public override string ToString() => $"{Name} ({ProcessPattern})";
 
@@ -24,8 +23,6 @@ internal sealed class MutableProfile
             Name = p.Name,
             ProcessPattern = p.ProcessPattern,
             GesturesEnabled = p.GesturesEnabled,
-            WheelUp = p.WheelUp,
-            WheelDown = p.WheelDown,
         };
         m.Gestures.AddRange(p.Gestures);
         return m;
@@ -37,7 +34,5 @@ internal sealed class MutableProfile
         ProcessPattern = ProcessPattern,
         GesturesEnabled = GesturesEnabled,
         Gestures = Gestures.ToArray(),
-        WheelUp = WheelUp,
-        WheelDown = WheelDown,
     };
 }

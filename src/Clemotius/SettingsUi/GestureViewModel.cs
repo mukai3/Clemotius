@@ -25,12 +25,17 @@ internal sealed partial class ProfileItemViewModel : ObservableObject
         => $"{p.Name} ({(string.IsNullOrWhiteSpace(p.ProcessPattern) ? "未割当" : p.ProcessPattern)})";
 }
 
-/// <summary>ジェスチャー一覧の1行（矢印表記＋アクション説明）。</summary>
+/// <summary>ジェスチャー一覧の1行（トリガ表記＝矢印 or ホイール＋アクション説明）。</summary>
 internal sealed record GestureRowViewModel(GestureBinding Binding)
 {
-    public string Arrows => new(Binding.Strokes
-        .Select(c => c switch { 'U' => '↑', 'D' => '↓', 'L' => '←', 'R' => '→', _ => c })
-        .ToArray());
+    public string Arrows => Binding.Strokes switch
+    {
+        WheelStrokes.Up => "ホイール↑",
+        WheelStrokes.Down => "ホイール↓",
+        _ => new(Binding.Strokes
+            .Select(c => c switch { 'U' => '↑', 'D' => '↓', 'L' => '←', 'R' => '→', _ => c })
+            .ToArray()),
+    };
 
     public string Description => ActionDisplay.Describe(Binding.Action);
 }
@@ -48,8 +53,6 @@ internal sealed partial class GestureViewModel : ObservableObject
     public ObservableCollection<GestureRowViewModel> Gestures { get; } = new();
 
     [ObservableProperty] private ProfileItemViewModel? _selectedProfile;
-    [ObservableProperty] private string _wheelUpText = "(なし)";
-    [ObservableProperty] private string _wheelDownText = "(なし)";
     [ObservableProperty] private bool _selectedIsRemovable;
 
     public GestureViewModel(IEnumerable<GestureProfile> profiles, Action changed)
@@ -69,20 +72,11 @@ internal sealed partial class GestureViewModel : ObservableObject
         if (SelectedProfile is not { } item)
         {
             SelectedIsRemovable = false;
-            WheelUpText = WheelDownText = "(なし)";
             return;
         }
         foreach (var g in item.Model.Gestures)
             Gestures.Add(new GestureRowViewModel(g));
         SelectedIsRemovable = true;
-        RefreshWheelTexts();
-    }
-
-    private void RefreshWheelTexts()
-    {
-        var p = SelectedProfile?.Model;
-        WheelUpText = p?.WheelUp is { } u ? ActionDisplay.Describe(u) : "(なし)";
-        WheelDownText = p?.WheelDown is { } d ? ActionDisplay.Describe(d) : "(なし)";
     }
 
     // ── プロファイル操作 ──
@@ -156,21 +150,19 @@ internal sealed partial class GestureViewModel : ObservableObject
         _changed();
     }
 
-    // ── 右ボタン + ホイール ──
-
-    public GestureAction? WheelActionOf(bool up)
-        => up ? SelectedProfile?.Model.WheelUp : SelectedProfile?.Model.WheelDown;
-
-    public void SetWheelAction(bool up, GestureAction? action)
+    /// <summary>
+    /// 選択中プロファイルで既に使われているストローク（WU/WD 含む）。追加/編集ダイアログで
+    /// 重複登録を防ぐために渡す。<paramref name="exceptIndex"/> は編集対象の行を除外する
+    /// （自分自身のストロークは保ってよい）ため。
+    /// </summary>
+    public IReadOnlyCollection<string> StrokesInUse(int exceptIndex = -1)
     {
         if (SelectedProfile is not { } item)
-            return;
-        if (up)
-            item.Model.WheelUp = action;
-        else
-            item.Model.WheelDown = action;
-        RefreshWheelTexts();
-        _changed();
+            return Array.Empty<string>();
+        return item.Model.Gestures
+            .Where((b, i) => i != exceptIndex)
+            .Select(b => b.Strokes)
+            .ToArray();
     }
 
     /// <summary>Build() 用: 現在の編集状態からプロファイル配列を構築する。</summary>

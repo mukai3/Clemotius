@@ -1,30 +1,31 @@
 using System.Windows;
+using System.Windows.Controls;
 using Clemotius.Core.Actions;
 using Clemotius.Core.Gestures;
 
 namespace Clemotius.SettingsUi.Dialogs;
 
 /// <summary>
-/// ジェスチャー（ストローク列＋アクション）またはアクション単体を編集する小ダイアログ（WPF版）。
-/// ストローク列は U/D/L/R、アクションは キー送信 / プリセット / コマンド。
-/// アクションのみモード（右+ホイール割当）ではストローク欄を隠し「割当なし」を許可する。
+/// ジェスチャー（ストローク列＋アクション）を編集する小ダイアログ（WPF版）。
+/// ストロークは U/D/L/R の軌跡、または右ボタン+ホイールを表す WU/WD（単独・他と混在不可）。
+/// アクションは キー送信 / プリセット / コマンド。
 /// </summary>
 public partial class GestureEditDialog
 {
-    private readonly bool _actionOnly;
+    private readonly IReadOnlyCollection<string> _existingStrokes;
 
-    /// <summary>ストローク付き編集の結果。</summary>
+    /// <summary>編集結果（OK 時のみ非 null）。</summary>
     internal GestureBinding? Result { get; private set; }
 
-    /// <summary>アクションのみ編集の結果（クリアした場合は null）。</summary>
-    internal GestureAction? ResultAction { get; private set; }
-
-    internal GestureEditDialog(GestureBinding? existing)
+    /// <param name="existing">編集対象。新規追加なら null。</param>
+    /// <param name="existingStrokes">同プロファイルで既に使用中のストローク（編集対象自身は除く）。重複防止に使う。</param>
+    internal GestureEditDialog(GestureBinding? existing, IReadOnlyCollection<string> existingStrokes)
     {
-        _actionOnly = false;
+        _existingStrokes = existingStrokes;
         InitializeComponent();
         Title = existing is null ? "ジェスチャーの追加" : "ジェスチャーの編集";
         DialogTitleBar.Title = Title;
+
         Setup();
         if (existing is not null)
         {
@@ -32,20 +33,21 @@ public partial class GestureEditDialog
             LoadAction(existing.Action);
         }
         UpdateParamVisibility();
+        ContentRendered += OnContentRenderedLockSize;
     }
 
-    internal GestureEditDialog(GestureAction? action, string title)
+    private bool _sizeLocked;
+
+    // SizeToContent="Height" が内容に合わせて確定した後の実寸で Min=Max を固定し、リサイズを防ぐ。
+    // SizeToContent の解除や Height の明示設定はしない（FluentWindow では ExtendsContentIntoTitleBar
+    // と相まってキャプション分の下部余白が生じるため）。Min=Max なので NoResize が効かなくても固定される。
+    private void OnContentRenderedLockSize(object? sender, EventArgs e)
     {
-        _actionOnly = true;
-        InitializeComponent();
-        Title = title;
-        DialogTitleBar.Title = title;
-        Setup();
-        StrokeRow.Visibility = Visibility.Collapsed;
-        ClearButton.Visibility = Visibility.Visible;
-        if (action is not null)
-            LoadAction(action);
-        UpdateParamVisibility();
+        if (_sizeLocked)
+            return;
+        _sizeLocked = true;
+        MinHeight = MaxHeight = ActualHeight;
+        MinWidth = MaxWidth = ActualWidth;
     }
 
     private void Setup()
@@ -86,8 +88,7 @@ public partial class GestureEditDialog
         }
     }
 
-    private void OnTypeChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        => UpdateParamVisibility();
+    private void OnTypeChanged(object sender, SelectionChangedEventArgs e) => UpdateParamVisibility();
 
     private void UpdateParamVisibility()
     {
@@ -98,7 +99,7 @@ public partial class GestureEditDialog
         KeysBox.Visibility = isKey ? Visibility.Visible : Visibility.Collapsed;
         CommandCombo.Visibility = isCmd ? Visibility.Visible : Visibility.Collapsed;
         PresetCombo.Visibility = isPreset ? Visibility.Visible : Visibility.Collapsed;
-        ParamLabel.Text = isKey ? "キー(クリックして押す)" : isCmd ? "コマンド" : "プリセット";
+        ParamLabel.Text = isKey ? "キー" : isCmd ? "コマンド" : "プリセット";
         if (isCmd && CommandCombo.SelectedIndex < 0 && CommandCombo.Items.Count > 0)
             CommandCombo.SelectedIndex = 0;
     }
@@ -110,13 +111,6 @@ public partial class GestureEditDialog
             StrokesBox.Text = strokes;
     }
 
-    private void OnClearAssignment(object sender, RoutedEventArgs e)
-    {
-        ResultAction = null;
-        DialogResult = true;
-        Close();
-    }
-
     private void OnCancel(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
@@ -125,24 +119,20 @@ public partial class GestureEditDialog
 
     private void OnOk(object sender, RoutedEventArgs e)
     {
-        if (!_actionOnly)
+        string strokes = StrokesBox.Text.Trim().ToUpperInvariant();
+        if (!IsValidStrokes(strokes))
         {
-            string strokes = StrokesBox.Text.Trim();
-            if (!IsValidStrokes(strokes))
-            {
-                Warn("ストロークは U/D/L/R の組み合わせで入力してください(例: DR)。");
-                return;
-            }
-            if (!TryBuildAction(out var act))
-                return;
-            Result = new GestureBinding(strokes, act!);
+            Warn("ストロークは U/D/L/R の組み合わせ、またはホイールの WU/WD（単独）で入力してください。");
+            return;
         }
-        else
+        if (_existingStrokes.Contains(strokes))
         {
-            if (!TryBuildAction(out var action))
-                return;
-            ResultAction = action;
+            Warn("このストロークは既に登録されています。");
+            return;
         }
+        if (!TryBuildAction(out var act))
+            return;
+        Result = new GestureBinding(strokes, act!);
         DialogResult = true;
         Close();
     }
@@ -186,8 +176,13 @@ public partial class GestureEditDialog
         return true;
     }
 
-    private static bool IsValidStrokes(string s) =>
-        s.Length > 0 && s.All(c => c is 'U' or 'D' or 'L' or 'R');
+    /// <summary>U/D/L/R の組み合わせ、または WU/WD（ホイール・単独）のみ有効。混在は不可。</summary>
+    private static bool IsValidStrokes(string s)
+    {
+        if (WheelStrokes.IsWheel(s))
+            return true;
+        return s.Length > 0 && s.All(c => c is 'U' or 'D' or 'L' or 'R');
+    }
 
     private void Warn(string message)
         => System.Windows.MessageBox.Show(

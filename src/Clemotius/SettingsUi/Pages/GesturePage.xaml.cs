@@ -90,7 +90,7 @@ public partial class GesturePage
     {
         if (Vm is not { } vm)
             return;
-        var dlg = new GestureEditDialog((Clemotius.Core.Gestures.GestureBinding?)null) { Owner = OwnerWindow };
+        var dlg = new GestureEditDialog(null, vm.StrokesInUse()) { Owner = OwnerWindow };
         if (dlg.ShowDialog() == true && dlg.Result is { } binding)
             vm.AddGesture(binding);
     }
@@ -101,7 +101,7 @@ public partial class GesturePage
             return;
         int index = GestureList.SelectedIndex;
         var current = ((GestureRowViewModel)GestureList.SelectedItem).Binding;
-        var dlg = new GestureEditDialog(current) { Owner = OwnerWindow };
+        var dlg = new GestureEditDialog(current, vm.StrokesInUse(index)) { Owner = OwnerWindow };
         if (dlg.ShowDialog() == true && dlg.Result is { } binding)
             vm.UpdateGesture(index, binding);
     }
@@ -118,21 +118,5 @@ public partial class GesturePage
         bool hasSelection = GestureList.SelectedIndex >= 0;
         EditGestureButton.IsEnabled = hasSelection;
         RemoveGestureButton.IsEnabled = hasSelection;
-    }
-
-    // ── 右ボタン + ホイール ──
-
-    private void OnEditWheelUp(object sender, RoutedEventArgs e) => EditWheel(up: true);
-
-    private void OnEditWheelDown(object sender, RoutedEventArgs e) => EditWheel(up: false);
-
-    private void EditWheel(bool up)
-    {
-        if (Vm is not { } vm)
-            return;
-        string title = up ? "右ボタン + ホイール上" : "右ボタン + ホイール下";
-        var dlg = new GestureEditDialog(vm.WheelActionOf(up), title) { Owner = OwnerWindow };
-        if (dlg.ShowDialog() == true)
-            vm.SetWheelAction(up, dlg.ResultAction);
     }
 }

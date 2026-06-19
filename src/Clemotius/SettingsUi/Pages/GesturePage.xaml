@@ -13,7 +13,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!--  プロファイルバー  -->
@@ -33,6 +32,7 @@
                 Text="プロファイル:" />
             <ComboBox
                 Grid.Column="1"
+                Margin="0,0,8,0"
                 DisplayMemberPath="DisplayName"
                 ItemsSource="{Binding Gesture.Profiles}"
                 SelectedItem="{Binding Gesture.SelectedProfile}" />
@@ -144,49 +144,6 @@
                 IsEnabled="False" />
         </StackPanel>
 
-        <!--  右ボタン + ホイール  -->
-        <StackPanel Grid.Row="3" Margin="0,16,0,0">
-            <TextBlock
-                Margin="0,0,0,8"
-                FontSize="16"
-                FontWeight="SemiBold"
-                Text="右ボタン + ホイール" />
-            <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock VerticalAlignment="Center" Text="上:" />
-                <TextBlock
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Text="{Binding Gesture.WheelUpText}"
-                    TextTrimming="CharacterEllipsis" />
-                <ui:Button
-                    Grid.Column="2"
-                    Click="OnEditWheelUp"
-                    Content="変更..." />
-            </Grid>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock VerticalAlignment="Center" Text="下:" />
-                <TextBlock
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Text="{Binding Gesture.WheelDownText}"
-                    TextTrimming="CharacterEllipsis" />
-                <ui:Button
-                    Grid.Column="2"
-                    Click="OnEditWheelDown"
-                    Content="変更..." />
-            </Grid>
-        </StackPanel>
-
         <!--
             プロファイル編集オーバーレイ。Popup は別 HWND になり、WinForms ループ上で
             .Show() した WPF ウィンドウ配下ではキーボードフォーカスが渡らない（テキスト入力不可）。
@@ -196,7 +153,7 @@
         <Grid
             x:Name="ProfileEditorOverlay"
             Grid.Row="0"
-            Grid.RowSpan="4"
+            Grid.RowSpan="3"
             Margin="-24,-16"
             Background="#80000000"
             Visibility="Collapsed">

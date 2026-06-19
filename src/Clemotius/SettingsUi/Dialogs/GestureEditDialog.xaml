@@ -6,6 +6,8 @@
     xmlns:dialogs="clr-namespace:Clemotius.SettingsUi.Dialogs"
     Title="ジェスチャーの編集"
     Width="440"
+    MinWidth="0"
+    MinHeight="0"
     ExtendsContentIntoTitleBar="True"
     ResizeMode="NoResize"
     SizeToContent="Height"
@@ -26,28 +28,34 @@
 
         <StackPanel Grid.Row="1" Margin="20,8,20,20">
 
+            <!--  親(設定画面)に合わせ「ラベル左寄せ + 入力欄は右側の固定250px列」で統一  -->
             <Grid x:Name="StrokeRow" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="250" />
                 </Grid.ColumnDefinitions>
-                <TextBlock VerticalAlignment="Center" Text="ストローク (U/D/L/R)" />
-                <TextBox
-                    x:Name="StrokesBox"
-                    Grid.Column="1"
-                    CharacterCasing="Upper" />
-                <ui:Button
-                    Grid.Column="3"
-                    Click="OnCaptureStroke"
-                    Content="マウスで入力..." />
+                <TextBlock VerticalAlignment="Center" Text="ストローク" />
+                <Grid Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBox
+                        x:Name="StrokesBox"
+                        CharacterCasing="Upper"
+                        PlaceholderText="U/D/L/R, WU/WD" />
+                    <ui:Button
+                        Grid.Column="2"
+                        Click="OnCaptureStroke"
+                        Content="マウスで入力..." />
+                </Grid>
             </Grid>
 
             <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="250" />
                 </Grid.ColumnDefinitions>
                 <TextBlock VerticalAlignment="Center" Text="アクション種別" />
                 <ComboBox
@@ -58,8 +66,8 @@
 
             <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="250" />
                 </Grid.ColumnDefinitions>
                 <TextBlock
                     x:Name="ParamLabel"
@@ -69,7 +77,8 @@
                     x:Name="KeysBox"
                     Grid.Column="1"
                     AutomationProperties.HelpText="欄をクリックして割り当てたいキーを押してください。Tab で次の項目へ移動できます。"
-                    AutomationProperties.Name="ショートカットキー" />
+                    AutomationProperties.Name="ショートカットキー"
+                    Style="{StaticResource {x:Type ui:TextBox}}" />
                 <ComboBox x:Name="CommandCombo" Grid.Column="1" />
                 <ComboBox
                     x:Name="PresetCombo"
@@ -79,27 +88,20 @@
 
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <ui:Button
-                    x:Name="ClearButton"
-                    Grid.Column="0"
-                    Click="OnClearAssignment"
-                    Content="割当なし"
-                    Visibility="Collapsed" />
-                <ui:Button
-                    Grid.Column="2"
+                    Grid.Column="1"
                     MinWidth="90"
                     Appearance="Primary"
                     Click="OnOk"
                     Content="OK"
                     IsDefault="True" />
                 <ui:Button
-                    Grid.Column="4"
+                    Grid.Column="3"
                     MinWidth="90"
                     Click="OnCancel"
                     Content="キャンセル"

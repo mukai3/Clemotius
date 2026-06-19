@@ -86,8 +86,33 @@ public partial class StrokeCaptureDialog
         e.Handled = true;
     }
 
-    /// <summary>U/D/L/R を矢印に変換してプレビュー表示する。</summary>
-    private static string ArrowsOf(string strokes) => new(strokes
-        .Select(c => c switch { 'U' => '↑', 'D' => '↓', 'L' => '←', 'R' => '→', _ => c })
-        .ToArray());
+    /// <summary>
+    /// ホイール回転で右ボタン+ホイール(WU/WD)を確定する。右ボタン押下中でも可。
+    /// ホイールは単独トリガのため、描きかけの軌跡は破棄して WU/WD に置き換える。
+    /// </summary>
+    private void OnCanvasWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Delta == 0)
+            return;
+        if (_capturing)
+        {
+            CanvasBorder.ReleaseMouseCapture();
+            _capturing = false;
+        }
+        Trail.Points.Clear();
+        _encoder.Reset();
+        Result = e.Delta > 0 ? WheelStrokes.Up : WheelStrokes.Down;
+        Preview.Text = ArrowsOf(Result);
+        e.Handled = true;
+    }
+
+    /// <summary>U/D/L/R を矢印に、WU/WD をホイール表記に変換してプレビュー表示する。</summary>
+    private static string ArrowsOf(string strokes) => strokes switch
+    {
+        WheelStrokes.Up => "ホイール↑",
+        WheelStrokes.Down => "ホイール↓",
+        _ => new(strokes
+            .Select(c => c switch { 'U' => '↑', 'D' => '↓', 'L' => '←', 'R' => '→', _ => c })
+            .ToArray()),
+    };
 }

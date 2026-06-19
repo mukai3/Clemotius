@@ -112,8 +112,10 @@ public class ConfigSerializerTests
         var profile = ClemotiusConfig.DefaultBrowserProfile();
         Assert.Equal("chrome, msedge", profile.ProcessPattern);
 
-        // ストローク構成（既定値の参照仕様）
-        var strokes = profile.Gestures.Select(g => g.Strokes).ToArray();
+        // ストローク構成（既定値の参照仕様）。右ボタン+ホイール(WU/WD)は除く。
+        var strokes = profile.Gestures
+            .Where(g => !WheelStrokes.IsWheel(g.Strokes))
+            .Select(g => g.Strokes).ToArray();
         Assert.Equal(new[] { "L", "R", "RU", "RD", "DR", "LR", "DL", "UDUD", "UD" }, strokes);
 
         GestureAction ActionOf(string s) => profile.Gestures.First(g => g.Strokes == s).Action;
@@ -160,6 +162,41 @@ public class ConfigSerializerTests
         var restored = ConfigSerializer.Deserialize(ConfigSerializer.Serialize(config));
         Assert.Null(restored.Profiles[0].WheelUp);
         Assert.Null(restored.Profiles[0].WheelDown);
+    }
+
+    [Fact]
+    public void WheelBinding_RoundTrips()
+    {
+        // 右ボタン+ホイールは一覧の binding（ストローク WU/WD）として保持・往復する。
+        var config = WithGesture(new GestureBinding(WheelStrokes.Down, new KeyAction(KeyStrokeParser.Parse("Ctrl+Tab"))));
+        var restored = ConfigSerializer.Deserialize(ConfigSerializer.Serialize(config));
+        var b = Assert.Single(restored.Profiles[0].Gestures);
+        Assert.Equal("WD", b.Strokes);
+        Assert.Equal("Ctrl+Tab", Assert.IsType<KeyAction>(restored.Profiles[0].WheelDown).Stroke.ToString());
+    }
+
+    [Fact]
+    public void LegacyWheelFields_MigrateToBindings()
+    {
+        // 旧形式（profiles[].wheelUp / wheelDown の独立フィールド）は読込時に WU/WD binding へ移行する。
+        var json = """
+        {
+          "profiles": [
+            {
+              "name": "L", "processPattern": "x", "gesturesEnabled": true, "gestures": [],
+              "wheelUp": { "type": "key", "keys": "Ctrl+Shift+Tab" },
+              "wheelDown": { "type": "key", "keys": "Ctrl+Tab" }
+            }
+          ]
+        }
+        """;
+        var restored = ConfigSerializer.Deserialize(json);
+        var p = Assert.Single(restored.Profiles);
+        Assert.Equal("Ctrl+Shift+Tab", Assert.IsType<KeyAction>(p.WheelUp).Stroke.ToString());
+        Assert.Equal("Ctrl+Tab", Assert.IsType<KeyAction>(p.WheelDown).Stroke.ToString());
+        Assert.Equal(2, p.Gestures.Count);
+        Assert.Contains(p.Gestures, b => b.Strokes == "WU");
+        Assert.Contains(p.Gestures, b => b.Strokes == "WD");
     }
 
     [Fact]

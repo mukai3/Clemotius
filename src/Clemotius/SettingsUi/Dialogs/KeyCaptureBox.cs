@@ -7,18 +7,21 @@ namespace Clemotius.SettingsUi.Dialogs;
 /// <summary>
 /// 実際のキー押下をキャプチャして <see cref="KeyStroke"/> を設定する WPF 版テキストボックス。
 /// フォーカス中にキーを押すと「Ctrl+Shift+Tab」のように表示・保持する。
+/// 見た目を他の入力欄に合わせるため Wpf.Ui の TextBox を継承し、未設定時はプレースホルダ表示。
 /// </summary>
-internal sealed class KeyCaptureBox : System.Windows.Controls.TextBox
+internal sealed class KeyCaptureBox : Wpf.Ui.Controls.TextBox
 {
     private const string Placeholder = "(クリックしてキーを押す)";
+    private const string FocusedHint = "キーを押してください…";
     private KeyStroke? _stroke;
 
     public KeyCaptureBox()
     {
         IsReadOnly = true;
         IsReadOnlyCaretVisible = false;
+        ClearButtonEnabled = false; // 読み取り専用なのでクリアボタンは出さない
         Cursor = System.Windows.Input.Cursors.Hand;
-        Text = Placeholder;
+        PlaceholderText = Placeholder;
     }
 
     /// <summary>現在保持しているキー。未設定なら null。</summary>
@@ -28,7 +31,7 @@ internal sealed class KeyCaptureBox : System.Windows.Controls.TextBox
         set
         {
             _stroke = value;
-            Text = value?.ToString() ?? Placeholder;
+            Text = value?.ToString() ?? "";
         }
     }
 
@@ -36,13 +39,14 @@ internal sealed class KeyCaptureBox : System.Windows.Controls.TextBox
     {
         base.OnGotKeyboardFocus(e);
         if (_stroke is null)
-            Text = "キーを押してください…";
+            PlaceholderText = FocusedHint;
     }
 
     protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
     {
         base.OnLostKeyboardFocus(e);
-        Text = _stroke?.ToString() ?? Placeholder;
+        PlaceholderText = Placeholder;
+        Text = _stroke?.ToString() ?? "";
     }
 
     protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)

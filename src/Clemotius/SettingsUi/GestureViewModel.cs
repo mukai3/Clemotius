@@ -81,10 +81,18 @@ internal sealed partial class GestureViewModel : ObservableObject
 
     // ── プロファイル操作 ──
 
-    public void AddProfile()
+    /// <summary>新規プロファイルの既定名（重複しにくいよう件数+1）。</summary>
+    public string SuggestedNewProfileName() => $"Profile{Profiles.Count + 1}";
+
+    /// <summary>編集フライアウトの「保存」で新規プロファイルを確定追加する（キャンセル時は何も追加しない）。</summary>
+    public void CommitNewProfile(string name, string processPattern, bool gesturesEnabled)
     {
-        var item = new ProfileItemViewModel(
-            new MutableProfile { Name = $"Profile{Profiles.Count}", ProcessPattern = "" });
+        var item = new ProfileItemViewModel(new MutableProfile
+        {
+            Name = name.Trim(),
+            ProcessPattern = processPattern.Trim(),
+            GesturesEnabled = gesturesEnabled,
+        });
         Profiles.Add(item);
         SelectedProfile = item;
         _changed();

@@ -24,18 +24,44 @@ public partial class GesturePage
 
     // ── プロファイル ──
 
+    // 新規追加フライアウトを開いているか（保存で確定、キャンセルでは何も追加しない）。
+    private bool _addingProfile;
+
     private void OnAddProfile(object sender, RoutedEventArgs e)
     {
-        Vm?.AddProfile();
-        OnEditProfile(sender, e); // 追加直後は名前/対象プロセスを入れるはずなので続けて開く
+        if (Vm is not { } vm)
+            return;
+        // この時点ではまだプロファイルを追加しない。保存されたら確定する（キャンセルで残らないように）。
+        _addingProfile = true;
+        FlyoutName.Text = vm.SuggestedNewProfileName();
+        FlyoutPattern.Text = "";
+        FlyoutEnabled.IsChecked = true;
+        FlyoutError.Visibility = Visibility.Collapsed;
+        // 対象プロセス未入力なので保存は無効から開始
+        FlyoutSave.IsEnabled = GestureViewModel.ValidateProfileEdit(FlyoutName.Text, FlyoutPattern.Text) is null;
+        ProfileEditorOverlay.Visibility = Visibility.Visible;
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => FlyoutPattern.Focus()));
     }
 
-    private void OnRemoveProfile(object sender, RoutedEventArgs e) => Vm?.RemoveSelectedProfile();
+    private void OnRemoveProfile(object sender, RoutedEventArgs e)
+    {
+        if (Vm is not { SelectedProfile: { } item } vm)
+            return;
+        var result = System.Windows.MessageBox.Show(
+            OwnerWindow,
+            $"プロファイル「{item.Model.Name}」を削除します。よろしいですか？",
+            "プロファイルの削除",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result == MessageBoxResult.Yes)
+            vm.RemoveSelectedProfile();
+    }
 
     private void OnEditProfile(object sender, RoutedEventArgs e)
     {
         if (Vm?.SelectedProfile is not { } item)
             return;
+        _addingProfile = false;
         FlyoutName.Text = item.Model.Name;
         FlyoutPattern.Text = item.Model.ProcessPattern;
         FlyoutEnabled.IsChecked = item.Model.GesturesEnabled;
@@ -52,7 +78,7 @@ public partial class GesturePage
 
     private void OnFlyoutInputChanged(object sender, RoutedEventArgs e)
     {
-        if (Vm?.SelectedProfile is null)
+        if (Vm is null)
             return;
         string? error = GestureViewModel.ValidateProfileEdit(FlyoutName.Text, FlyoutPattern.Text);
         FlyoutError.Text = error ?? "";
@@ -62,16 +88,23 @@ public partial class GesturePage
 
     private void OnFlyoutSave(object sender, RoutedEventArgs e)
     {
-        if (Vm is not { SelectedProfile: not null } vm)
+        if (Vm is not { } vm)
             return;
         if (GestureViewModel.ValidateProfileEdit(FlyoutName.Text, FlyoutPattern.Text) is not null)
             return; // 保存ボタンは無効化済みのはずだが念のため
-        vm.ApplyProfileEdit(FlyoutName.Text, FlyoutPattern.Text, FlyoutEnabled.IsChecked == true);
+        if (_addingProfile)
+            vm.CommitNewProfile(FlyoutName.Text, FlyoutPattern.Text, FlyoutEnabled.IsChecked == true);
+        else
+            vm.ApplyProfileEdit(FlyoutName.Text, FlyoutPattern.Text, FlyoutEnabled.IsChecked == true);
+        _addingProfile = false;
         ProfileEditorOverlay.Visibility = Visibility.Collapsed;
     }
 
     private void OnFlyoutCancel(object sender, RoutedEventArgs e)
-        => ProfileEditorOverlay.Visibility = Visibility.Collapsed;
+    {
+        _addingProfile = false;
+        ProfileEditorOverlay.Visibility = Visibility.Collapsed;
+    }
 
     /// <summary>フライアウトの対象プロセスを、実行中アプリの選択ダイアログで設定する。</summary>
     private void OnPickProfileProcesses(object sender, RoutedEventArgs e)

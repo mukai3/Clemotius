@@ -12,6 +12,9 @@ internal sealed class TrayIcon : IDisposable
     public event Action<bool>? PauseChanged;
     public event Action? ExitRequested;
 
+    /// <summary>アイコンをダブルクリックしたとき（実際の動作は設定に応じて呼び出し側が決める）。</summary>
+    public event Action? DoubleClicked;
+
     public TrayIcon()
     {
         var menu = new ContextMenuStrip();
@@ -37,8 +40,11 @@ internal sealed class TrayIcon : IDisposable
             ContextMenuStrip = menu,
             Visible = true,
         };
-        _icon.DoubleClick += (_, _) => OpenSettingsRequested?.Invoke();
+        _icon.DoubleClick += (_, _) => DoubleClicked?.Invoke();
     }
+
+    /// <summary>一時停止の ON/OFF を切り替える（メニューのチェック状態も連動し PauseChanged が発火する）。</summary>
+    public void TogglePause() => _pauseItem.Checked = !_pauseItem.Checked;
 
     public void ShowInfo(string message)
     {

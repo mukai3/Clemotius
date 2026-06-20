@@ -9,14 +9,26 @@
         VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="640">
 
-            <TextBlock FontSize="28" FontWeight="SemiBold">
-                <Run Text="Clemotius" />
-                <Run
-                    FontSize="15"
-                    FontWeight="Normal"
-                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                    Text=" -KazaguruMouse Alternative-" />
-            </TextBlock>
+            <StackPanel Orientation="Horizontal">
+                <Image
+                    Width="40"
+                    Height="40"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    RenderOptions.BitmapScalingMode="HighQuality"
+                    Source="pack://application:,,,/clemotius.png" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="28"
+                    FontWeight="SemiBold">
+                    <Run Text="Clemotius" />
+                    <Run
+                        FontSize="15"
+                        FontWeight="Normal"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text=" -KazaguruMouse Alternative-" />
+                </TextBlock>
+            </StackPanel>
             <TextBlock
                 Margin="0,4,0,0"
                 FontSize="16"

@@ -24,7 +24,14 @@
             Grid.Row="0"
             Title="Clemotius 設定"
             ShowMaximize="True"
-            ShowMinimize="True" />
+            ShowMinimize="True">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon
+                    Width="16"
+                    Height="16"
+                    Source="pack://application:,,,/clemotius.ico" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
 
         <ui:NavigationView
             x:Name="RootNavigation"

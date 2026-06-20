@@ -156,11 +156,17 @@ internal sealed partial class SettingsViewModel : ObservableObject
             InvalidStrokeColor = General.InvalidStrokeColor,
         };
 
+        var tray = _original.Tray with
+        {
+            DoubleClickAction = General.TrayDoubleClickAction,
+        };
+
         return _original with
         {
             Scroll = scroll,
             Titlebar = titlebar,
             Gesture = gesture,
+            Tray = tray,
             Theme = General.Theme,
             Profiles = Gesture.BuildProfiles(),
         };

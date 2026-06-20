@@ -36,6 +36,23 @@
                 Margin="0,16,0,12"
                 FontSize="16"
                 FontWeight="SemiBold"
+                Text="トレイ" />
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="250" />
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" Text="アイコンのダブルクリック" />
+                <ComboBox Grid.Column="1" SelectedIndex="{Binding General.TrayDoubleClickAction}">
+                    <ComboBoxItem Content="設定を開く" />
+                    <ComboBoxItem Content="一時停止の切り替え" />
+                </ComboBox>
+            </Grid>
+
+            <TextBlock
+                Margin="0,16,0,12"
+                FontSize="16"
+                FontWeight="SemiBold"
                 Text="ジェスチャー認識" />
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>

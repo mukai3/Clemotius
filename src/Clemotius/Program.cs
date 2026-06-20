@@ -115,6 +115,7 @@ internal sealed class AppContext : ApplicationContext
         _tray.OpenSettingsRequested += OnOpenSettings;
         _tray.PauseChanged += OnPauseChanged;
         _tray.ExitRequested += OnExit;
+        _tray.DoubleClicked += OnTrayDoubleClick;
 
         // 2つ目の起動からの「設定を開け」通知をUIスレッドでポーリング
         _instancePollTimer = new System.Windows.Forms.Timer { Interval = 500 };
@@ -182,6 +183,15 @@ internal sealed class AppContext : ApplicationContext
         };
         _wpfSettings.Show();
         _wpfSettings.BringToFront();
+    }
+
+    // トレイアイコンのダブルクリック: 設定に応じて「設定を開く」か「一時停止の切り替え」。
+    private void OnTrayDoubleClick()
+    {
+        if (_configStore.Current.Tray.DoubleClickAction == 1)
+            _tray.TogglePause();
+        else
+            OnOpenSettings();
     }
 
     private void OnPauseChanged(bool paused)

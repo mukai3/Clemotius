@@ -14,6 +14,7 @@ internal sealed partial class GeneralViewModel : ObservableObject
     private bool _initialized;
 
     [ObservableProperty] private int _themeIndex; // 0=システム連動, 1=ライト, 2=ダーク
+    [ObservableProperty] private int _trayDoubleClickAction; // 0=設定を開く, 1=一時停止
     [ObservableProperty] private int _range;
 
     /// <summary>テーマの設定値("system"/"light"/"dark")。ThemeIndex から導出する。</summary>
@@ -30,6 +31,7 @@ internal sealed partial class GeneralViewModel : ObservableObject
     {
         _changed = changed;
         _themeIndex = config.Theme switch { "light" => 1, "dark" => 2, _ => 0 };
+        _trayDoubleClickAction = config.Tray.DoubleClickAction == 1 ? 1 : 0;
         _range = Math.Clamp(config.Gesture.Range, 1, 100);
         _timeoutMs = Math.Clamp(config.Gesture.TimeoutMs, 0, 10000);
         _pushHoldTimeMs = Math.Clamp(config.Gesture.PushHoldTimeMs, 0, 5000);

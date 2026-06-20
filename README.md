@@ -47,6 +47,10 @@ WPF + [WPF-UI](https://github.com/lepoco/wpfui) による Fluent デザインの
 
 ![Clemotius 設定画面 - ウィンドウ](assets/screenshots/settings-window.png)
 
+「詳細」ページでは外観テーマ、ジェスチャー判定のしきい値（距離/タイムアウト/長押し）、軌跡・コマンド表示を設定できます。
+
+![Clemotius 設定画面 - 詳細](assets/screenshots/settings-details.png)
+
 ## 開発 / ビルド
 
 ```powershell

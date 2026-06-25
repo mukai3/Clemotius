@@ -32,6 +32,19 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <TextBlock
+                Margin="0,24,0,12"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Text="検出するスクロールバー種別" />
+            <CheckBox
+                Margin="0,0,0,4"
+                Content="Office アプリのスクロールバー"
+                IsChecked="{Binding DetectOfficeScrollbar}" />
+            <CheckBox
+                Content="Chromium 系ブラウザのスクロールバー"
+                IsChecked="{Binding DetectBrowserScrollbar}" />
         </StackPanel>
     </ScrollViewer>
 </Page>

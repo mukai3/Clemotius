@@ -17,6 +17,21 @@ public sealed record ScrollSettings
     public string OnVerticalScrollbar { get; init; } = "code:55";   // ページスクロール
     public string OnHorizontalScrollbar { get; init; } = "code:57"; // 水平 3 列スクロール
 
+    /// <summary>
+    /// MSAA カスタム描画スクロールバー（Excel 等）をスクロールバーとして検出するか。
+    /// 既定 false。標準バー（独立 ScrollBar コントロール／非クライアントの WS_*SCROLL）は
+    /// この設定に関係なく常に検出する。有効時はマウス移動毎・ホイール毎にクロスプロセスの
+    /// MSAA 検出（バックグラウンド先読み）が走るため負荷が増える。
+    /// </summary>
+    public bool DetectOfficeScrollbar { get; init; }
+
+    /// <summary>
+    /// UIA カスタム描画スクロールバー（Chromium 系ブラウザの横バー等）を検出するか。
+    /// 既定 false。有効時はブラウザ描画窓上でカーソル静止時に UIA 検出（先読み）が走る。
+    /// 無効時はブラウザ横スクロールを修飾キー＋ホイール（<see cref="ModifierScroll"/>）で代替する。
+    /// </summary>
+    public bool DetectBrowserScrollbar { get; init; }
+
     public int MergeWheelDelta { get; init; } = 2;
     public int WheelResolution { get; init; } = 1;
     public int AutoWheelResolution { get; init; } = 3;

@@ -143,6 +143,26 @@ public class ConfigSerializerTests
     }
 
     [Fact]
+    public void ScrollbarDetectionFlags_DefaultOff()
+    {
+        var s = ClematiusConfig.CreateDefault().Scroll;
+        Assert.False(s.DetectOfficeScrollbar);
+        Assert.False(s.DetectBrowserScrollbar);
+    }
+
+    [Fact]
+    public void ScrollbarDetectionFlags_RoundTrip()
+    {
+        var original = new ClematiusConfig
+        {
+            Scroll = new ScrollSettings { DetectOfficeScrollbar = true, DetectBrowserScrollbar = true },
+        };
+        var restored = ConfigSerializer.Deserialize(ConfigSerializer.Serialize(original));
+        Assert.True(restored.Scroll.DetectOfficeScrollbar);
+        Assert.True(restored.Scroll.DetectBrowserScrollbar);
+    }
+
+    [Fact]
     public void WheelActions_RoundTrip()
     {
         // 既定では Profiles[0] がブラウザ用（タブ切替の右+ホイールを持つ）

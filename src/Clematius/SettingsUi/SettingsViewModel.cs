@@ -31,6 +31,12 @@ internal sealed partial class SettingsViewModel : ObservableObject
     // ── ホイール: スクロールバー上での動作（[0]=垂直, [1]=水平）──
     public IReadOnlyList<ChoiceSlotViewModel> WheelBarSlots { get; }
 
+    // ── ホイール: 検出するスクロールバー種別（標準バーは常時。下記は重い検出のため既定OFF）──
+    [ObservableProperty] private bool _detectOfficeScrollbar;
+    partial void OnDetectOfficeScrollbarChanged(bool value) => NotifyChanged();
+    [ObservableProperty] private bool _detectBrowserScrollbar;
+    partial void OnDetectBrowserScrollbarChanged(bool value) => NotifyChanged();
+
     // ── ウィンドウ: タイトルバーアクション6種＋不透明度 ──
     public IReadOnlyList<ChoiceSlotViewModel> TitlebarSlots { get; }
 
@@ -69,6 +75,8 @@ internal sealed partial class SettingsViewModel : ObservableObject
             Slot("V", "垂直スクロールバー上でホイール回転", ScrollBehaviorChoice.VerticalBar, config.Scroll.OnVerticalScrollbar),
             Slot("H", "水平スクロールバー上でホイール回転", ScrollBehaviorChoice.HorizontalBar, config.Scroll.OnHorizontalScrollbar),
         };
+        _detectOfficeScrollbar = config.Scroll.DetectOfficeScrollbar;
+        _detectBrowserScrollbar = config.Scroll.DetectBrowserScrollbar;
 
         var tb = config.Titlebar;
         TitlebarSlots = new[]
@@ -122,6 +130,8 @@ internal sealed partial class SettingsViewModel : ObservableObject
         {
             OnVerticalScrollbar = WheelBarSlots[0].Value,
             OnHorizontalScrollbar = WheelBarSlots[1].Value,
+            DetectOfficeScrollbar = DetectOfficeScrollbar,
+            DetectBrowserScrollbar = DetectBrowserScrollbar,
             ModifierScroll = new ModifierScrollSettings
             {
                 Shift = SlotValue(ModifierSlots, "Shift"),

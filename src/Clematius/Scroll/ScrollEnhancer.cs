@@ -25,12 +25,14 @@ internal sealed class ScrollEnhancer
         _modifiers = modifiers;
         _settings = settings;
         _resolver = new ModifierScrollResolver(settings.ModifierScroll);
+        ScrollBarDetector.Configure(settings.DetectOfficeScrollbar, settings.DetectBrowserScrollbar);
     }
 
     public void UpdateSettings(ScrollSettings settings)
     {
         _settings = settings;
         _resolver = new ModifierScrollResolver(settings.ModifierScroll);
+        ScrollBarDetector.Configure(settings.DetectOfficeScrollbar, settings.DetectBrowserScrollbar);
     }
 
     /// <returns>true ならイベントを飲み込む</returns>

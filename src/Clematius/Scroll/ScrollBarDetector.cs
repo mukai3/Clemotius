@@ -36,6 +36,19 @@ internal static class ScrollBarDetector
 
     private static volatile CacheEntry? _cache;
 
+    // カスタムバー検出のオン/オフ（設定由来）。標準バー（クラス名 / NCHITTEST）は常に検出するが、
+    // 重いクロスプロセス検出（MSAA=Office / UIA=Chromium）と先読み（Prime/settle）はここで制御する。
+    // 両方 false なら Detect/Prime はホットパスで一切のカスタム検出・先読みを行わない（負荷ゼロ）。
+    private static volatile bool _detectOffice;
+    private static volatile bool _detectBrowser;
+
+    /// <summary>カスタムバー検出の有効/無効を設定する（設定変更時に <see cref="ScrollEnhancer"/> から呼ぶ）。</summary>
+    public static void Configure(bool office, bool browser)
+    {
+        _detectOffice = office;
+        _detectBrowser = browser;
+    }
+
     // キャッシュ再利用の有効期間（いずれも 8px 両軸一致が前提）。None は通常スクロール中に素早く
     // 再評価できるよう短く、ヒット(バー)はホバー先読みが寿命切れせずホイールまで残るよう長くする。
     private const uint CacheNoneMs = 250;
@@ -138,8 +151,10 @@ internal static class ScrollBarDetector
         // 非同期検出が間に合わない間も、同じ窓・同じバー帯上を直近カスタムバーと判定済みなら前回の
         // 軸で確定する。これにより横スクロールバー上で素通しの縦スクロールが混ざるのを防ぐ。送出先は
         // この窓でよい（ホイール送出はどの窓でも有効なことを実測確認済み）。
+        // 記憶の種別（MSAA=Wheel:true / UIA=Wheel:false）が現在無効な検出のものなら再利用しない。
         var lc = _lastCustom;
-        if (lc is not null && CanReuseCustom(lc, hwnd, x, y, now))
+        if (lc is not null && (lc.Wheel ? _detectOffice : _detectBrowser)
+            && CanReuseCustom(lc, hwnd, x, y, now))
             return Store(x, y, lc.Hit, hwnd, lc.Wheel);
 
         return Store(x, y, ScrollBarHit.None, 0, false); // 暫定値（プローブ完了時に上書きされる）
@@ -237,6 +252,10 @@ internal static class ScrollBarDetector
     /// </summary>
     public static void Prime(int x, int y)
     {
+        bool office = _detectOffice, browser = _detectBrowser;
+        if (!office && !browser)
+            return; // カスタム検出が両方無効なら先読みもしない（WindowFromPoint ごと省く）
+
         var c = _cache;
         uint now = (uint)Environment.TickCount;
         if (c is not null && now - c.Tick < 250 && Math.Abs(x - c.X) < 8 && Math.Abs(y - c.Y) < 8)
@@ -246,7 +265,7 @@ internal static class ScrollBarDetector
         if (hwnd == 0 || !InputNative.GetWindowRect(hwnd, out var r))
             return;
 
-        // (1) 細い窓＝独立カスタムバー窓: 従来どおり MSAA→UIA で即温める
+        // (1) 細い窓＝独立カスタムバー窓: 従来どおり MSAA→UIA で即温める（KickProbe 内で種別を出し分け）
         if (Math.Min(r.Right - r.Left, r.Bottom - r.Top) <= ScrollbarWindowThickness)
         {
             if (!ProbeBusy())
@@ -256,8 +275,8 @@ internal static class ScrollBarDetector
 
         // (2) ブラウザの描画窓: 下側/右側ゾーンなら settle-debounce 先読みを予約する（静止時のみ1回
         // UIA。常時 UIA で相手のアクセシビリティを熱くし続けないため）。ProbeBusy では弾かない
-        // （予約だけ。実 probe は静止後にタイマー→lease で起動）。
-        if (IsBrowserContentClass(GetClassName(hwnd)))
+        // （予約だけ。実 probe は静止後にタイマー→lease で起動）。Chromium 検出が無効なら予約しない。
+        if (browser && IsBrowserContentClass(GetClassName(hwnd)))
         {
             if (Clematius.Core.Scroll.ScrollBarBand.InEdgeZone(
                     x, y, r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top,
@@ -288,6 +307,9 @@ internal static class ScrollBarDetector
     // フックスレッドを止めないため必ず別スレッドで実行する（単発ガード付き）。
     private static void KickProbe(int x, int y, nint hwnd)
     {
+        bool office = _detectOffice, browser = _detectBrowser;
+        if (!office && !browser)
+            return; // カスタム検出は両方無効
         uint lease = TryAcquireProbe();
         if (lease == 0)
             return;
@@ -296,28 +318,31 @@ internal static class ScrollBarDetector
             try
             {
                 // 3) MSAA カスタムバー（Excel 等）は WM_VSCROLL を受け付けないため WM_MOUSEWHEEL で送る
-                var m = DetectByMsaaCore(x, y);
-                if (m.hit != ScrollBarHit.None)
+                if (office)
                 {
-                    uint t = (uint)Environment.TickCount;
-                    // 期限超過で lease を奪われていたら、別座標の新しい検出を古い結果で上書きしない
-                    if (LeaseStillMine(lease))
+                    var m = DetectByMsaaCore(x, y);
+                    if (m.hit != ScrollBarHit.None)
                     {
-                        _cache = new CacheEntry(x, y, m.hit, m.target, true, t);
-                        _lastCustom = new CustomHit(hwnd, x, y, m.hit, true, t);
+                        uint t = (uint)Environment.TickCount;
+                        // 期限超過で lease を奪われていたら、別座標の新しい検出を古い結果で上書きしない
+                        if (LeaseStillMine(lease))
+                        {
+                            _cache = new CacheEntry(x, y, m.hit, m.target, true, t);
+                            _lastCustom = new CustomHit(hwnd, x, y, m.hit, true, t);
+                        }
+                        return;
                     }
                 }
-                else
+                // 4) UIA（Chromium 等）は WM_VSCROLL/WM_HSCROLL がそのまま有効
+                // browser 無効なら UIA は掛けず、MSAA 非ヒット（または office 無効）として None をキャッシュし
+                // 連続ホイール中の再 probe を抑制する。
+                var u = browser ? DetectByUia(x, y, hwnd) : (ScrollBarHit.None, (nint)0);
+                uint tu = (uint)Environment.TickCount;
+                if (LeaseStillMine(lease))
                 {
-                    // 4) UIA（Chromium 等）は WM_VSCROLL/WM_HSCROLL がそのまま有効
-                    var u = DetectByUia(x, y, hwnd);
-                    uint t = (uint)Environment.TickCount;
-                    if (LeaseStillMine(lease))
-                    {
-                        _cache = new CacheEntry(x, y, u.hit, u.target, false, t);
-                        if (u.hit != ScrollBarHit.None)
-                            _lastCustom = new CustomHit(hwnd, x, y, u.hit, false, t);
-                    }
+                    _cache = new CacheEntry(x, y, u.Item1, u.Item2, false, tu);
+                    if (u.Item1 != ScrollBarHit.None)
+                        _lastCustom = new CustomHit(hwnd, x, y, u.Item1, false, tu);
                 }
             }
             finally
@@ -407,6 +432,7 @@ internal static class ScrollBarDetector
         long uiaMs = sw.ElapsedMilliseconds;
 
         return $"pos=({x},{y}) class={cls} style=0x{style:X} nchit={nchit} edge={edge} " +
+               $"detect=[office={_detectOffice},browser={_detectBrowser}] " +
                $"msaa={msaa.hit}({msaaMs}ms) uia={uia.hit}({uiaMs}ms) " +
                $"cache=[{cache}] lastCustom=[{lastc}]";
     }

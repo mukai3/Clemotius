@@ -52,12 +52,16 @@ internal static class ScrollBarDetector
     private sealed record CustomHit(nint Hwnd, int X, int Y, ScrollBarHit Hit, bool Wheel, uint Tick);
     private static volatile CustomHit? _lastCustom;
     private const uint CustomMemoryMs = 2000;
+    // 横は記憶を短くする。横バンドは Web の横カルーセル下端と紛らわしく、長く覚えていると通常の縦
+    // スクロール中に「一瞬だけ横に走る」誤判定が残留しやすい。横バー上の連続ホイールには十分な長さ。
+    private const uint CustomMemoryHorizontalMs = 400;
     private const int CustomReuseSlopPx = 12;
 
     // 直近カスタムバー記憶を今回の位置で再利用してよいか。バー帯から直交方向に外れていたら不可。
     private static bool CanReuseCustom(CustomHit lc, nint hwnd, int x, int y, uint now)
     {
-        if (lc.Hwnd != hwnd || now - lc.Tick >= CustomMemoryMs || lc.Hit == ScrollBarHit.None)
+        uint maxAge = lc.Hit == ScrollBarHit.Horizontal ? CustomMemoryHorizontalMs : CustomMemoryMs;
+        if (lc.Hwnd != hwnd || now - lc.Tick >= maxAge || lc.Hit == ScrollBarHit.None)
             return false;
         return lc.Hit switch
         {
@@ -139,41 +143,17 @@ internal static class ScrollBarDetector
     private static volatile EdgePrime? _lastEdgePrime;
     private const uint EdgePrimeThrottleMs = 150;
 
-    // ブラウザのコンテンツ描画窓は、横スクロールバーが「窓端ではなく UIA 要素の下端」にあるため
-    // 端帯ジオメトリでは拾えない（実測で確認）。UIA は安価（1〜7ms）なので、これらの窓では端帯に
-    // 依らず常時 UIA で先読みしてキャッシュを温める。頻度は位置対応 throttle で抑える：同一窓では
-    // 120ms に1回までだが、大きく移動した（＝コンテンツからバーへ乗り移った）ときは即座に許可して
-    // 「バー着地直後のホイール」までに温まるようにする。
-    private sealed record BrowserPrime(nint Hwnd, int X, int Y, uint Tick);
-    private static volatile BrowserPrime? _lastBrowserPrime;
-    private const uint BrowserPrimeThrottleMs = 120;
-    private const uint BrowserPrimeMoveFloorMs = 40; // 大移動時でもこの間隔は空ける（連発抑制）
-    private const int BrowserPrimeMoveBypassPx = 32;
-
-    // ブラウザのコンテンツ描画窓クラス（Chromium 系: Chrome/Edge/WebView2/Electron、Firefox）。
-    private static bool IsBrowserContentClass(string cls)
-        => cls == "Chrome_RenderWidgetHostHWND" || cls == "MozillaWindowClass";
-
-    // ブラウザ先読みを今回起動してよいか。直近 probe から十分時間が経つか、大きく動いていれば許可。
-    private static bool BrowserPrimeAllowed(nint hwnd, int x, int y, uint now)
-    {
-        var b = _lastBrowserPrime;
-        if (b is null || b.Hwnd != hwnd)
-            return true;
-        uint elapsed = now - b.Tick;
-        bool movedFar = Math.Abs(x - b.X) > BrowserPrimeMoveBypassPx
-                     || Math.Abs(y - b.Y) > BrowserPrimeMoveBypassPx;
-        if (movedFar && elapsed >= BrowserPrimeMoveFloorMs)
-            return true; // バーへ乗り移った等の大移動は早めに温める
-        return elapsed >= BrowserPrimeThrottleMs;
-    }
-
     /// <summary>
     /// マウス移動中の事前検出（ホバー先読み）。直後のホイールが最初の1ノッチから正しい軸で動くよう
     /// バックグラウンドで検出してキャッシュを温める（プロセス外フックでは同期 MSAA が使えないための代替）。
-    /// 対象は (1) カスタムスクロールバーらしい「細い窓」、または (2) 大窓でも右端/下端のスクロールバー
-    /// 帯（Chromium 等、コンテンツとバーが同一 HWND のケース）。フックスレッドでは
-    /// WindowFromPoint/GetWindowRect（ローカルで安全）しか行わない。
+    /// 対象は (1) カスタムスクロールバーらしい「細い窓」、または (2) 大窓でも右端/下端のスクロールバー帯。
+    /// フックスレッドでは WindowFromPoint/GetWindowRect（ローカルで安全）しか行わない。
+    ///
+    /// 注意: ブラウザのコンテンツ描画窓（Chromium 等）でマウス移動毎に UIA を当て続けると、相手の
+    /// アクセシビリティが持続的に有効化され、重いサイト（YouTube 等）でスクロールが引っかかる原因に
+    /// なる。そのため大窓の先読みは「右端/下端の端帯」に限定し、コンテンツ全面での常時先読みはしない。
+    /// （Chromium の縦バーは描画窓の右端にあり端帯で温まる。横バーは窓端に無いため初回1ノッチのみ
+    ///   素通しになりうるが、これは許容して常時先読みによる実害を避ける。）
     /// </summary>
     public static void Prime(int x, int y)
     {
@@ -195,19 +175,9 @@ internal static class ScrollBarDetector
             return;
         }
 
-        // (2) ブラウザのコンテンツ描画窓: 横バーが窓端に無く端帯では拾えないため、端帯に依らず UIA 専用で
-        // 先読みする（UIA は安価。MSAA を先に呼ぶと環境次第で遅く lease を占有し、バー着地の先読みを妨げる）。
-        if (IsBrowserContentClass(GetClassName(hwnd)))
-        {
-            if (!BrowserPrimeAllowed(hwnd, x, y, now))
-                return;
-            _lastBrowserPrime = new BrowserPrime(hwnd, x, y, now);
-            KickProbeUiaOnly(x, y, hwnd);
-            return;
-        }
-
-        // (3) その他の大窓: 右端/下端のスクロールバー帯ならホバー先読みする（独自描画アプリのバーで
-        // 窓端にあるもの向け。MSAA→UIA）。
+        // (2) 大窓: 右端/下端のスクロールバー帯ならホバー先読みする（窓端にバーがあるアプリ向け。
+        // Chromium の縦バーもここで温まる）。端帯でないコンテンツ全面では先読みしない（常時 UIA で
+        // 相手のアクセシビリティを熱くし続けないため）。
         var cand = Clemotius.Core.Scroll.ScrollBarBand.EdgeCandidate(
             x, y, r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top,
             InputNative.GetSystemMetrics(InputNative.SM_CXVSCROLL),
@@ -257,35 +227,6 @@ internal static class ScrollBarDetector
                         if (u.hit != ScrollBarHit.None)
                             _lastCustom = new CustomHit(hwnd, x, y, u.hit, false, t);
                     }
-                }
-            }
-            finally
-            {
-                ReleaseProbe(lease);
-            }
-        });
-    }
-
-    // ブラウザのコンテンツ描画窓向け: UIA のみで検出してキャッシュへ反映する（MSAA は呼ばない）。
-    // Chromium は MSAA が既定無効でスタブしか返さないうえ、環境次第で遅く lease を占有しうるため、
-    // 安価で確実な UIA に絞る。フックスレッドを止めないため必ず別スレッドで実行する。
-    private static void KickProbeUiaOnly(int x, int y, nint hwnd)
-    {
-        uint lease = TryAcquireProbe();
-        if (lease == 0)
-            return;
-        Task.Run(() =>
-        {
-            try
-            {
-                var u = DetectByUia(x, y, hwnd);
-                uint t = (uint)Environment.TickCount;
-                // 期限超過で lease を奪われていたら、別座標の新しい検出を古い結果で上書きしない
-                if (LeaseStillMine(lease))
-                {
-                    _cache = new CacheEntry(x, y, u.hit, u.target, false, t);
-                    if (u.hit != ScrollBarHit.None)
-                        _lastCustom = new CustomHit(hwnd, x, y, u.hit, false, t);
                 }
             }
             finally
@@ -411,13 +352,12 @@ internal static class ScrollBarDetector
                         pattern.Current.HorizontallyScrollable,
                         InputNative.GetSystemMetrics(InputNative.SM_CXVSCROLL),
                         InputNative.GetSystemMetrics(InputNative.SM_CYHSCROLL));
-                    return hit switch
-                    {
-                        Clemotius.Core.Scroll.BandHit.Vertical => (ScrollBarHit.Vertical, hwnd),
-                        Clemotius.Core.Scroll.BandHit.Horizontal => (ScrollBarHit.Horizontal, hwnd),
-                        // 最初に見つかったスクロール要素で判定を終える（外側へは波及させない）
-                        _ => (ScrollBarHit.None, 0),
-                    };
+                    if (hit == Clemotius.Core.Scroll.BandHit.Vertical)
+                        return (ScrollBarHit.Vertical, hwnd);
+                    if (hit == Clemotius.Core.Scroll.BandHit.Horizontal)
+                        return (ScrollBarHit.Horizontal, hwnd);
+                    // この要素のバー帯ではない（None）。内側に横スクロール要素（カルーセル等）が
+                    // あってもその中央ではバー扱いしないため、外側のスクロール要素を候補に親へ継続する。
                 }
                 el = System.Windows.Automation.TreeWalker.ControlViewWalker.GetParent(el);
             }

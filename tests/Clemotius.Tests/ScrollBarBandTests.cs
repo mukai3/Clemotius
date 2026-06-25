@@ -18,8 +18,18 @@ public class ScrollBarBandTests
     [Fact]
     public void BottomEdgeBand_IsHorizontal()
     {
+        // 横帯は HorizontalMargin=0 のため実バー厚のみ（500-17=483 が内側境界）
         Assert.Equal(BandHit.Horizontal, Hit(300, 499, v: false));
-        Assert.Equal(BandHit.Horizontal, Hit(300, 479, v: false)); // 500-21=479
+        Assert.Equal(BandHit.Horizontal, Hit(300, 483, v: false)); // 帯の内側境界 (500-17=483)
+    }
+
+    [Fact]
+    public void HorizontalBand_IsTighterThanVertical()
+    {
+        // Web の横カルーセル下端での誤判定を抑えるため、横帯は余裕を持たせない。
+        // 縦帯と同じ「下端から21px」の位置(479)は、横では帯外＝None になる。
+        Assert.Equal(BandHit.None, Hit(300, 479, v: false)); // 旧仕様(Margin=4)では Horizontal だった
+        Assert.Equal(BandHit.None, Hit(300, 482, v: false)); // 境界の1px外
     }
 
     [Fact]

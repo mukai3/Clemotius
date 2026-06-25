@@ -18,6 +18,13 @@ public static class ScrollBarBand
     /// <summary>帯幅に足す余裕(px)。オーバーレイ型の細いスクロールバーを拾いやすくする。</summary>
     public const int Margin = 4;
 
+    /// <summary>
+    /// 水平帯の余裕(px)。横帯は Web の横スクロールするカルーセル/カード/シェルフの下端と紛らわしく、
+    /// 余裕を持たせると通常の縦スクロール中に横と誤判定しやすい（一瞬だけ横に走る）。実バー厚のみに
+    /// 絞って誤爆面積を抑える。垂直帯の誤判定は意図と同方向(縦)で無害なため <see cref="Margin"/> を維持。
+    /// </summary>
+    public const int HorizontalMargin = 0;
+
     /// <param name="x">カーソルX（スクリーン座標）</param>
     /// <param name="y">カーソルY（スクリーン座標）</param>
     /// <param name="left">要素の左端</param>
@@ -42,7 +49,7 @@ public static class ScrollBarBand
         // 垂直を優先（右下隅は垂直扱い。両方可の場合の慣例に合わせる）
         if (verticallyScrollable && x >= left + width - (vBarWidth + Margin))
             return BandHit.Vertical;
-        if (horizontallyScrollable && y >= top + height - (hBarHeight + Margin))
+        if (horizontallyScrollable && y >= top + height - (hBarHeight + HorizontalMargin))
             return BandHit.Horizontal;
         return BandHit.None;
     }
